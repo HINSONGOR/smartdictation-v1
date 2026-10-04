@@ -1,0 +1,289 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Components use the Tailwind utilities generated from @theme below
+ * (bg-surface, text-foreground, bg-primary …) — never raw colour values.
+ * Each theme only overrides the --sd-* variables.
+ */
+
+/* ---- Shape / typography tokens (basic themes) ---- */
+:root {
+  --sd-radius-card: 1rem;
+  --sd-radius-control: 0.75rem;
+  --sd-shadow-card: 0 1px 2px rgb(0 0 0 / 0.05);
+  --sd-shadow-card-hover: 0 6px 16px rgb(0 0 0 / 0.08);
+  --sd-font: ui-sans-serif, system-ui, -apple-system, "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", sans-serif;
+  --sd-pattern: none;
+  /* "Show answer" button is orange in every theme. */
+  --sd-reveal: #c2410c;
+  --sd-reveal-hover: #9a3412;
+  --sd-on-reveal: #ffffff;
+  /* Chart marks: theme primary by default; overridden where the primary fails the dataviz checks. */
+  --sd-chart: var(--sd-primary);
+}
+
+[data-theme="dark"],
+[data-theme="space"] {
+  --sd-reveal: #fb923c;
+  --sd-reveal-hover: #fdba74;
+  --sd-on-reveal: #1c1917;
+}
+
+/* Validated with dataviz validate_palette.js against each theme surface (lightness band, chroma, ≥3:1). */
+[data-theme="dark"] { --sd-chart: #3b82f6; }
+[data-theme="space"] { --sd-chart: #d97706; }
+[data-theme="ocean"] { --sd-chart: #0891b2; }
+
+/* ---- Colour themes ---- */
+:root,
+[data-theme="default"] {
+  color-scheme: light;
+  --sd-background: #fff8f1;
+  --sd-surface: #ffffff;
+  --sd-surface-muted: #fff1e3;
+  --sd-border: #fde3c8;
+  --sd-foreground: #2b1d12;
+  --sd-muted: #7c6553;
+  --sd-primary: #c2410c;
+  --sd-primary-hover: #9a3412;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #ffedd5;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+}
+
+[data-theme="blue"] {
+  color-scheme: light;
+  --sd-background: #f3f7ff;
+  --sd-surface: #ffffff;
+  --sd-surface-muted: #e8f0ff;
+  --sd-border: #cfdcf7;
+  --sd-foreground: #0f1b33;
+  --sd-muted: #52627f;
+  --sd-primary: #1d4ed8;
+  --sd-primary-hover: #1e40af;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #dbeafe;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+}
+
+[data-theme="green"] {
+  color-scheme: light;
+  --sd-background: #f2faf4;
+  --sd-surface: #ffffff;
+  --sd-surface-muted: #e3f4e8;
+  --sd-border: #c7e7d0;
+  --sd-foreground: #10261a;
+  --sd-muted: #4f6b5a;
+  --sd-primary: #15803d;
+  --sd-primary-hover: #166534;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #dcfce7;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+}
+
+[data-theme="purple"] {
+  color-scheme: light;
+  --sd-background: #f8f5ff;
+  --sd-surface: #ffffff;
+  --sd-surface-muted: #efe8ff;
+  --sd-border: #ddd0fb;
+  --sd-foreground: #1f1336;
+  --sd-muted: #64587f;
+  --sd-primary: #7c3aed;
+  --sd-primary-hover: #6d28d9;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #ede9fe;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+}
+
+[data-theme="pink"] {
+  color-scheme: light;
+  --sd-background: #fff5f9;
+  --sd-surface: #ffffff;
+  --sd-surface-muted: #ffe6f0;
+  --sd-border: #fbcfe1;
+  --sd-foreground: #33121f;
+  --sd-muted: #7f5566;
+  --sd-primary: #be185d;
+  --sd-primary-hover: #9d174d;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #fce7f3;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --sd-background: #0f172a;
+  --sd-surface: #1e293b;
+  --sd-surface-muted: #273449;
+  --sd-border: #334155;
+  --sd-foreground: #f1f5f9;
+  --sd-muted: #94a3b8;
+  --sd-primary: #60a5fa;
+  --sd-primary-hover: #93c5fd;
+  --sd-on-primary: #0f172a;
+  --sd-primary-soft: #1e3a5f;
+  --sd-danger: #f87171;
+  --sd-success: #4ade80;
+}
+
+/*
+ * ---- Cartoon themes ----
+ * Rounder corners, chunky "sticker" shadows, rounded font, background pattern.
+ * Patterns are inline SVG data URIs (# encoded as %23).
+ */
+[data-theme="cat"],
+[data-theme="dino"],
+[data-theme="space"],
+[data-theme="ocean"],
+[data-theme="unicorn"] {
+  --sd-radius-card: 1.75rem;
+  --sd-radius-control: 1.25rem;
+  --sd-shadow-card: 0 4px 0 var(--sd-border);
+  --sd-shadow-card-hover: 0 7px 0 var(--sd-border);
+  --sd-font: ui-rounded, "Arial Rounded MT Bold", "Varela Round", "PingFang HK", "Noto Sans HK", "Microsoft JhengHei", system-ui, sans-serif;
+}
+
+[data-theme="cat"] {
+  color-scheme: light;
+  --sd-background: #fff8ec;
+  --sd-surface: #fffdf8;
+  --sd-surface-muted: #fdf0d9;
+  --sd-border: #f1d3a6;
+  --sd-foreground: #3b2614;
+  --sd-muted: #85664a;
+  --sd-primary: #b45309;
+  --sd-primary-hover: #92400e;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #fef4e2;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+  --sd-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23f3d6ac' fill-opacity='.55'%3E%3Cellipse cx='30' cy='36' rx='8' ry='6.5'/%3E%3Ccircle cx='20' cy='26' r='3.4'/%3E%3Ccircle cx='26.5' cy='21' r='3.4'/%3E%3Ccircle cx='33.5' cy='21' r='3.4'/%3E%3Ccircle cx='40' cy='26' r='3.4'/%3E%3Cellipse cx='90' cy='96' rx='8' ry='6.5'/%3E%3Ccircle cx='80' cy='86' r='3.4'/%3E%3Ccircle cx='86.5' cy='81' r='3.4'/%3E%3Ccircle cx='93.5' cy='81' r='3.4'/%3E%3Ccircle cx='100' cy='86' r='3.4'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+[data-theme="dino"] {
+  color-scheme: light;
+  --sd-background: #f6fde8;
+  --sd-surface: #fbfff2;
+  --sd-surface-muted: #ecf8d3;
+  --sd-border: #c9e5a0;
+  --sd-foreground: #1d2e0e;
+  --sd-muted: #5b7044;
+  --sd-primary: #3f6212;
+  --sd-primary-hover: #365314;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #e2f5c2;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+  --sd-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23cde8a4' fill-opacity='.6'%3E%3Cellipse cx='26' cy='28' rx='12' ry='5' transform='rotate(-35 26 28)'/%3E%3Cellipse cx='36' cy='36' rx='9' ry='4' transform='rotate(25 36 36)'/%3E%3Cpath d='M78 96 l8-14 l8 14 l8-14 l8 14z'/%3E%3Ccircle cx='96' cy='30' r='4'/%3E%3Ccircle cx='22' cy='92' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+[data-theme="space"] {
+  color-scheme: dark;
+  --sd-background: #17153f;
+  --sd-surface: #24215c;
+  --sd-surface-muted: #2f2b70;
+  --sd-border: #433e94;
+  --sd-foreground: #f5f3ff;
+  --sd-muted: #b4aee8;
+  --sd-primary: #facc15;
+  --sd-primary-hover: #fde047;
+  --sd-on-primary: #1e1b4b;
+  --sd-primary-soft: #3b357f;
+  --sd-danger: #fb7185;
+  --sd-success: #4ade80;
+  --sd-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='12' cy='18' r='1.2' opacity='.7'/%3E%3Ccircle cx='70' cy='40' r='1' opacity='.5'/%3E%3Ccircle cx='118' cy='14' r='1.4' opacity='.8'/%3E%3Ccircle cx='40' cy='96' r='1.1' opacity='.6'/%3E%3Ccircle cx='100' cy='120' r='1.3' opacity='.7'/%3E%3Ccircle cx='128' cy='78' r='.9' opacity='.5'/%3E%3C/g%3E%3Cpath fill='%23fde68a' opacity='.55' d='M98 52 l2.5 6.5 l6.5 2.5 l-6.5 2.5 l-2.5 6.5 l-2.5-6.5 l-6.5-2.5 l6.5-2.5z M24 50 l1.5 4 l4 1.5 l-4 1.5 l-1.5 4 l-1.5-4 l-4-1.5 l4-1.5z'/%3E%3C/svg%3E");
+}
+
+[data-theme="ocean"] {
+  color-scheme: light;
+  --sd-background: #ecfbff;
+  --sd-surface: #f7feff;
+  --sd-surface-muted: #dcf5fb;
+  --sd-border: #a8def0;
+  --sd-foreground: #0b2a36;
+  --sd-muted: #4c6f7d;
+  --sd-primary: #0e7490;
+  --sd-primary-hover: #155e75;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #cff2fa;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+  --sd-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='none' stroke='%2399d6ea' stroke-opacity='.6' stroke-width='2'%3E%3Ccircle cx='24' cy='30' r='9'/%3E%3Ccircle cx='38' cy='18' r='5'/%3E%3Ccircle cx='92' cy='86' r='7'/%3E%3Ccircle cx='80' cy='100' r='4'/%3E%3Cpath d='M0 64 q15-10 30 0 t30 0 t30 0 t30 0'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+[data-theme="unicorn"] {
+  color-scheme: light;
+  --sd-background: #fdf4ff;
+  --sd-surface: #fffaff;
+  --sd-surface-muted: #f8e6fc;
+  --sd-border: #ecc5f5;
+  --sd-foreground: #3b0f45;
+  --sd-muted: #74507d;
+  --sd-primary: #a21caf;
+  --sd-primary-hover: #86198f;
+  --sd-on-primary: #ffffff;
+  --sd-primary-soft: #f5d9fa;
+  --sd-danger: #dc2626;
+  --sd-success: #15803d;
+  --sd-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cpath fill='%23f0abfc' fill-opacity='.45' d='M28 38 l-9-9 a5 5 0 0 1 9-6 a5 5 0 0 1 9 6z'/%3E%3Cpath fill='%23a5b4fc' fill-opacity='.5' d='M90 80 l2.5 6.5 l6.5 2.5 l-6.5 2.5 l-2.5 6.5 l-2.5-6.5 l-6.5-2.5 l6.5-2.5z'/%3E%3Ccircle cx='96' cy='26' r='3' fill='%2367e8f9' fill-opacity='.5'/%3E%3Ccircle cx='26' cy='96' r='2.5' fill='%23fcd34d' fill-opacity='.6'/%3E%3C/svg%3E");
+}
+
+@theme inline {
+  --color-background: var(--sd-background);
+  --color-surface: var(--sd-surface);
+  --color-surface-muted: var(--sd-surface-muted);
+  --color-border: var(--sd-border);
+  --color-foreground: var(--sd-foreground);
+  --color-muted: var(--sd-muted);
+  --color-primary: var(--sd-primary);
+  --color-primary-hover: var(--sd-primary-hover);
+  --color-on-primary: var(--sd-on-primary);
+  --color-primary-soft: var(--sd-primary-soft);
+  --color-danger: var(--sd-danger);
+  --color-success: var(--sd-success);
+  --color-chart: var(--sd-chart);
+  --color-reveal: var(--sd-reveal);
+  --color-reveal-hover: var(--sd-reveal-hover);
+  --color-on-reveal: var(--sd-on-reveal);
+
+  --font-sans: var(--sd-font);
+
+  --radius-card: var(--sd-radius-card);
+  --radius-control: var(--sd-radius-control);
+  --shadow-card: var(--sd-shadow-card);
+  --shadow-card-hover: var(--sd-shadow-card-hover);
+
+  /* Feedback animations — use with motion-safe: so reduced-motion users are respected. */
+  --animate-pop: pop 0.45s ease-out;
+  --animate-shake: shake 0.4s ease-in-out;
+
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--sd-background);
+  background-image: var(--sd-pattern);
+  color: var(--sd-foreground);
+  font-family: var(--sd-font);
+}

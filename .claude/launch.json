@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "smartdictation-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-static.mjs", "3100"],
+      "port": 3100
+    },
+    {
+      "name": "smartdictation-pages",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-static.mjs", "3200", "/smartdictation-v1"],
+      "port": 3200
+    }
+  ]
+}

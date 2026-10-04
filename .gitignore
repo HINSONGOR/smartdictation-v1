@@ -1,0 +1,33 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# generated stroke-order data (copied from node_modules/hanzi-writer-data)
+/public/stroke-data/
+# generated service worker (from scripts/sw.template.js)
+/public/sw.js
+
+# personal Claude Code settings (launch.json is shared)
+/.claude/settings.local.json
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# debug
+npm-debug.log*
+
+# env files
+.env*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
