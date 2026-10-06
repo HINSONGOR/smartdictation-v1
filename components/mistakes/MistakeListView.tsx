@@ -28,6 +28,11 @@ export function MistakeListView({ studentId }: { studentId: string }) {
 
   const pending = (language: DictationLanguage) => overview.active.filter((r) => r.language === language).length;
 
+  async function removeRecord(recordId: string) {
+    await services.mistakes.remove(studentId, recordId);
+    setOverview(await services.mistakes.overview(studentId));
+  }
+
   async function clearMastered() {
     await services.mistakes.clearMastered(studentId);
     setConfirmingClear(false);
@@ -88,7 +93,7 @@ export function MistakeListView({ studentId }: { studentId: string }) {
           ) : (
             <ul className="divide-y divide-border">
               {overview.active.map((r) => (
-                <ActiveRow key={r.id} record={r} />
+                <ActiveRow key={r.id} record={r} onDelete={() => removeRecord(r.id)} />
               ))}
             </ul>
           )
@@ -98,7 +103,7 @@ export function MistakeListView({ studentId }: { studentId: string }) {
           <>
             <ul className="divide-y divide-border">
               {overview.mastered.map((r) => (
-                <MasteredRow key={r.id} record={r} />
+                <MasteredRow key={r.id} record={r} onDelete={() => removeRecord(r.id)} />
               ))}
             </ul>
             <div className="mt-3">
@@ -136,7 +141,7 @@ function LanguageBadge({ language }: { language: DictationLanguage }) {
   );
 }
 
-function ActiveRow({ record }: { record: MistakeRecord }) {
+function ActiveRow({ record, onDelete }: { record: MistakeRecord; onDelete: () => void }) {
   const { t, services } = useApp();
   const streak = record.correctStreak ?? 0;
 
@@ -148,7 +153,8 @@ function ActiveRow({ record }: { record: MistakeRecord }) {
         onClick={() => services.tts.speak(record.text, record.language).catch(() => {})}
         className="min-w-0 flex-1 text-left"
       >
-        <span className="block truncate text-lg text-foreground">{record.text}</span>
+        {/* Wrap rather than truncate: passage sentences are long on a phone. */}
+        <span className="block text-lg break-words text-foreground">{record.text}</span>
         {record.wrongAnswer && (
           <span className="block truncate text-xs text-muted">{t("mistakes.wrongAnswer", { answer: record.wrongAnswer })}</span>
         )}
@@ -166,11 +172,12 @@ function ActiveRow({ record }: { record: MistakeRecord }) {
           ))}
         </span>
       </div>
+      <DeleteButton text={record.text} onConfirm={onDelete} />
     </li>
   );
 }
 
-function MasteredRow({ record }: { record: MistakeRecord }) {
+function MasteredRow({ record, onDelete }: { record: MistakeRecord; onDelete: () => void }) {
   const { t, settings } = useApp();
   const date = record.masteredAt
     ? new Intl.DateTimeFormat(settings.locale, { dateStyle: "medium" }).format(new Date(record.masteredAt))
@@ -181,6 +188,35 @@ function MasteredRow({ record }: { record: MistakeRecord }) {
       <LanguageBadge language={record.language} />
       <span className="min-w-0 flex-1 truncate text-foreground">{record.text}</span>
       <span className="shrink-0 text-xs text-success">✓ {t("mistakes.masteredAt", { date })}</span>
+      <DeleteButton text={record.text} onConfirm={onDelete} />
     </li>
+  );
+}
+
+/**
+ * Two-tap delete so a child doesn't remove a word by accident: "🗑 刪除" → "確定刪除？".
+ * The confirm state resets after a few seconds.
+ */
+function DeleteButton({ text, onConfirm }: { text: string; onConfirm: () => void }) {
+  const { t } = useApp();
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setTimeout(() => setConfirming(false), 4000);
+    return () => clearTimeout(timer);
+  }, [confirming]);
+
+  return (
+    <button
+      type="button"
+      onClick={() => (confirming ? onConfirm() : setConfirming(true))}
+      aria-label={confirming ? t("mistakes.deleteConfirmAria", { text }) : t("mistakes.deleteAria", { text })}
+      className={`min-h-11 shrink-0 rounded-control border px-3 text-sm font-medium transition-colors ${
+        confirming ? "border-danger bg-danger text-on-primary" : "border-border text-danger hover:border-danger"
+      }`}
+    >
+      {t(confirming ? "mistakes.deleteConfirm" : "mistakes.delete")}
+    </button>
   );
 }

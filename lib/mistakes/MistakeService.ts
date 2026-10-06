@@ -40,6 +40,11 @@ export class MistakeService {
     return [...items.filter((i) => i.kind === "word"), ...items.filter((i) => i.kind === "sentence")];
   }
 
+  /** Delete one mistake record (e.g. the child already knows it). Only the student's own record. */
+  async remove(studentId: string, recordId: string): Promise<void> {
+    await this.mistakes.removeForStudent(studentId, recordId);
+  }
+
   /** Remove mastered records (owner / student tidy-up). */
   async clearMastered(studentId: string): Promise<void> {
     const { mastered } = await this.overview(studentId);
