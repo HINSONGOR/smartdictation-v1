@@ -262,8 +262,6 @@ export const en: Messages = {
   "mistakes.clearYes": "Clear",
   "mistakes.masteryRule": "Get a word right {goal} times in a row to master it — it then moves to “Mastered”.",
   "mistakes.nothingToReview": "No mistakes to review in this language.",
-  "mistakes.lang.zh": "中",
-  "mistakes.lang.en": "EN",
   "dashboard.mistakesBadge": "{count} to review",
 
   "practice.start": "Start",

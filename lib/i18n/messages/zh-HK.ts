@@ -261,8 +261,6 @@ export const zhHK = {
   "mistakes.clearYes": "確定清除",
   "mistakes.masteryRule": "連續答對 {goal} 次就算掌握，詞語會移到「已掌握」。",
   "mistakes.nothingToReview": "這個語言沒有需要重溫的錯字。",
-  "mistakes.lang.zh": "中",
-  "mistakes.lang.en": "EN",
   "dashboard.mistakesBadge": "{count} 個待重溫",
 
   "practice.start": "開始默書",

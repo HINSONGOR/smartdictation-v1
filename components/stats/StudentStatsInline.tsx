@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/layout/AppProvider";
+import { bracketed, joinList, labelled } from "@/lib/i18n";
 import type { StudentStats } from "@/lib/stats/StatsService";
 import { formatDate, formatPercent } from "./format";
 
@@ -18,7 +19,7 @@ export function StudentStatsInline({ studentId }: { studentId: string }) {
   const { overview } = stats;
 
   const rows: [string, string][] = [
-    [t("progress.sessions"), `${overview.sessions}（${t("progress.weekSummary", { count: overview.sessionsLast7Days })}）`],
+    [t("progress.sessions"), `${overview.sessions}${bracketed(t("progress.weekSummary", { count: overview.sessionsLast7Days }), settings.locale)}`],
     [t("progress.accuracy"), formatPercent(overview.accuracy, settings.locale)],
     [t("progress.streak"), t("progress.streakValue", { count: overview.streak })],
     [t("progress.mistakes"), `${stats.activeMistakes} · ${t("progress.mastered", { count: stats.masteredMistakes })}`],
@@ -41,7 +42,7 @@ export function StudentStatsInline({ studentId }: { studentId: string }) {
       </dl>
       {stats.topMistakes.length > 0 && (
         <p className="text-xs text-muted">
-          {t("progress.topMistakes")}：{stats.topMistakes.map((m) => m.text).join("、")}
+          {labelled(t("progress.topMistakes"), joinList(stats.topMistakes.map((m) => m.text), settings.locale), settings.locale)}
         </p>
       )}
     </div>

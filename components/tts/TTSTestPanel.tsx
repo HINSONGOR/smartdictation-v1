@@ -2,10 +2,11 @@
 
 import { useApp } from "@/components/layout/AppProvider";
 import { Button } from "@/components/ui/Button";
+import { bracketed } from "@/lib/i18n";
 
 /** Verifies the UI → TTSService → WebSpeechTTSProvider → SpeechSynthesis chain for each voice. */
 export function TTSTestPanel() {
-  const { t, services } = useApp();
+  const { t, services, settings } = useApp();
   const { tts } = services;
 
   if (!tts.isSupported()) {
@@ -20,13 +21,13 @@ export function TTSTestPanel() {
         variant="secondary"
         onClick={() => tts.speak(t("settings.ttsSampleZh"), "zh", { ...plain, voice: "cantonese" }).catch(() => {})}
       >
-        {t("settings.ttsTestZh")}（{t("practice.voice.cantonese")}）
+        {t("settings.ttsTestZh")}{bracketed(t("practice.voice.cantonese"), settings.locale)}
       </Button>
       <Button
         variant="secondary"
         onClick={() => tts.speak(t("settings.ttsSampleZh"), "zh", { ...plain, voice: "mandarin" }).catch(() => {})}
       >
-        {t("settings.ttsTestZh")}（{t("practice.voice.mandarin")}）
+        {t("settings.ttsTestZh")}{bracketed(t("practice.voice.mandarin"), settings.locale)}
       </Button>
       <Button variant="secondary" onClick={() => tts.speak(t("settings.ttsSampleEn"), "en", plain).catch(() => {})}>
         {t("settings.ttsTestEn")}

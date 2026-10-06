@@ -9,6 +9,7 @@ import { RequireStudent } from "@/components/student/RequireStudent";
 import { ThemeMascot } from "@/components/theme/Mascot";
 import { Card, SectionTitle } from "@/components/ui/Card";
 import type { StudentStats } from "@/lib/stats/StatsService";
+import { bracketed } from "@/lib/i18n";
 import { accuracy } from "@/lib/stats/statsCalc";
 import { DailyChart } from "./DailyChart";
 import { formatDateTime, formatPercent } from "./format";
@@ -149,7 +150,7 @@ function ProgressView({ studentId }: { studentId: string }) {
                   {session.kind === "review"
                     ? t("progress.reviewSession")
                     : (title ?? t("progress.deletedList"))}
-                  {session.kind === "retry" && <span className="ml-1 text-xs text-muted">（{t("progress.kind.retry")}）</span>}
+                  {session.kind === "retry" && <span className="text-xs text-muted">{bracketed(t("progress.kind.retry"), settings.locale)}</span>}
                 </span>
                 <span className="block text-xs text-muted">
                   {formatDateTime(session.finishedAt, settings.locale)} · {t(`practice.mode.${session.mode}`)}

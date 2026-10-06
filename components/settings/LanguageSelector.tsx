@@ -4,12 +4,12 @@ import { useApp } from "@/components/layout/AppProvider";
 import { LOCALES } from "@/types";
 
 export function LanguageSelector() {
-  const { t, settings, setLocale } = useApp();
+  const { t, preferredLocale, setLocale } = useApp();
 
   return (
     <div className="flex gap-2" role="radiogroup" aria-label={t("settings.language")}>
       {LOCALES.map((locale) => {
-        const selected = settings.locale === locale;
+        const selected = preferredLocale === locale;
         return (
           <button
             key={locale}

@@ -6,7 +6,7 @@ import { ThemeMascot } from "@/components/theme/Mascot";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PracticeSummary } from "@/lib/dictation/practiceSession";
-import type { MessageKey } from "@/lib/i18n";
+import { joinList, type MessageKey } from "@/lib/i18n";
 import type { DictationLanguage } from "@/types";
 
 function resultMessage({ correct, total }: PracticeSummary): MessageKey {
@@ -37,7 +37,7 @@ export function PracticeResults({
   onRetryWrong,
   onRetryAll,
 }: Props) {
-  const { t, services } = useApp();
+  const { t, services, settings } = useApp();
 
   return (
     <Card className="mx-auto max-w-xl space-y-5 text-center">
@@ -56,7 +56,7 @@ export function PracticeResults({
       {newlyMastered.length > 0 && (
         <div role="status" className="rounded-control border-2 border-success p-3 motion-safe:animate-pop">
           <p className="font-semibold text-success">🎉 {t("mistakes.newlyMastered", { count: newlyMastered.length })}</p>
-          <p className="mt-1 text-foreground">{newlyMastered.join("、")}</p>
+          <p className="mt-1 text-foreground">{joinList(newlyMastered, settings.locale)}</p>
         </div>
       )}
 

@@ -45,9 +45,9 @@ export class MistakeService {
     await this.mistakes.removeForStudent(studentId, recordId);
   }
 
-  /** Remove mastered records (owner / student tidy-up). */
-  async clearMastered(studentId: string): Promise<void> {
-    const { mastered } = await this.overview(studentId);
+  /** Remove mastered records (owner / student tidy-up), optionally for one language only. */
+  async clearMastered(studentId: string, language?: DictationLanguage): Promise<void> {
+    const { mastered } = await this.overview(studentId, language);
     for (const record of mastered) await this.mistakes.removeForStudent(studentId, record.id);
   }
 }

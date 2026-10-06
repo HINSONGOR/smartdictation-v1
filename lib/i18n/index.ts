@@ -24,6 +24,21 @@ export function createTranslator(locale: Locale): Translate {
   };
 }
 
+/** "蓋子、蛋糕" in Chinese, "apple, banana" in English. */
+export function joinList(items: string[], locale: Locale): string {
+  return items.join(locale === "en" ? ", " : "、");
+}
+
+/** Text in brackets, using full-width brackets for Chinese. */
+export function bracketed(text: string, locale: Locale): string {
+  return locale === "en" ? ` (${text})` : `（${text}）`;
+}
+
+/** "Label：value" / "Label: value". */
+export function labelled(label: string, value: string, locale: Locale): string {
+  return locale === "en" ? `${label}: ${value}` : `${label}：${value}`;
+}
+
 /** Limits referenced by error messages, so the numbers live only in `types/`. */
 const ERROR_VARS: TranslateVars = {
   maxStudents: MAX_STUDENTS,

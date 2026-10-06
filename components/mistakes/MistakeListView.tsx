@@ -1,24 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useApp } from "@/components/layout/AppProvider";
+import { useCallback, useEffect, useState } from "react";
+import { LocaleScope, useApp } from "@/components/layout/AppProvider";
 import { ThemeMascot } from "@/components/theme/Mascot";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { createTranslator } from "@/lib/i18n";
 import type { MistakeOverview } from "@/lib/mistakes/MistakeService";
 import { MASTERY_STREAK, type DictationLanguage, type MistakeRecord } from "@/types";
 import { mistakeRoutes } from "./routes";
 
-const LANGUAGES: DictationLanguage[] = ["zh", "en"];
 type Tab = "active" | "mastered";
 
-/** One student's mistakes: review entry points + active / mastered lists. */
+/** English section labels always use English (English dictation UI is fully English). */
+const english = createTranslator("en");
+
+/** One student's mistakes, split into Chinese and English: review entry + active / mastered lists. */
 export function MistakeListView({ studentId }: { studentId: string }) {
   const { t, services } = useApp();
   const [overview, setOverview] = useState<MistakeOverview | null>(null);
-  const [tab, setTab] = useState<Tab>("active");
-  const [confirmingClear, setConfirmingClear] = useState(false);
+  const [language, setLanguage] = useState<DictationLanguage>("zh");
+
+  const reload = useCallback(async () => setOverview(await services.mistakes.overview(studentId)), [services, studentId]);
 
   useEffect(() => {
     services.mistakes.overview(studentId).then(setOverview);
@@ -26,44 +30,102 @@ export function MistakeListView({ studentId }: { studentId: string }) {
 
   if (!overview) return <p className="text-sm text-muted">{t("app.loading")}</p>;
 
-  const pending = (language: DictationLanguage) => overview.active.filter((r) => r.language === language).length;
+  const byLanguage = (lang: DictationLanguage): MistakeOverview => ({
+    active: overview.active.filter((r) => r.language === lang),
+    mastered: overview.mastered.filter((r) => r.language === lang),
+  });
+  const pending = (lang: DictationLanguage) => byLanguage(lang).active.length;
+  const tabLabel: Record<DictationLanguage, string> = {
+    zh: t("mistakes.review.zh"),
+    en: english("mistakes.review.en"),
+  };
+
+  const section = (
+    <LanguageSection
+      key={language}
+      studentId={studentId}
+      language={language}
+      overview={byLanguage(language)}
+      onChanged={reload}
+    />
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2" role="tablist" aria-label={t("nav.mistakes")}>
+        {(["zh", "en"] as const).map((lang) => (
+          <button
+            key={lang}
+            type="button"
+            role="tab"
+            aria-selected={language === lang}
+            lang={lang === "en" ? "en" : undefined}
+            onClick={() => setLanguage(lang)}
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-control border-2 px-3 text-base font-semibold ${
+              language === lang ? "border-primary bg-primary text-on-primary" : "border-border bg-surface text-foreground"
+            }`}
+          >
+            {tabLabel[lang]}
+            <span
+              className={`rounded-full px-2 text-sm ${language === lang ? "bg-on-primary text-primary" : "bg-primary-soft text-primary"}`}
+            >
+              {pending(lang)}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {language === "en" ? <LocaleScope locale="en">{section}</LocaleScope> : section}
+    </div>
+  );
+}
+
+/** Review button + active / mastered lists for one language. */
+function LanguageSection({
+  studentId,
+  language,
+  overview,
+  onChanged,
+}: {
+  studentId: string;
+  language: DictationLanguage;
+  overview: MistakeOverview;
+  onChanged: () => Promise<void>;
+}) {
+  const { t, services } = useApp();
+  const [tab, setTab] = useState<Tab>("active");
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const count = overview.active.length;
 
   async function removeRecord(recordId: string) {
     await services.mistakes.remove(studentId, recordId);
-    setOverview(await services.mistakes.overview(studentId));
+    await onChanged();
   }
 
   async function clearMastered() {
-    await services.mistakes.clearMastered(studentId);
+    await services.mistakes.clearMastered(studentId, language);
     setConfirmingClear(false);
-    setOverview(await services.mistakes.overview(studentId));
+    await onChanged();
   }
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {LANGUAGES.map((language) => {
-          const count = pending(language);
-          return (
-            <Card key={language} className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <h2 className="font-semibold text-foreground">{t(`mistakes.review.${language}`)}</h2>
-                <p className="text-sm text-muted">{t("mistakes.pendingCount", { count })}</p>
-              </div>
-              {count > 0 ? (
-                <Link
-                  href={mistakeRoutes.review(language)}
-                  className="inline-flex min-h-11 items-center rounded-control bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
-                >
-                  ▶ {t("mistakes.startReview")}
-                </Link>
-              ) : (
-                <span className="text-sm text-success">✓</span>
-              )}
-            </Card>
-          );
-        })}
-      </div>
+      <Card className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-foreground">{t(`mistakes.review.${language}`)}</h2>
+          <p className="text-sm text-muted">{t("mistakes.pendingCount", { count })}</p>
+        </div>
+        {count > 0 ? (
+          <Link
+            href={mistakeRoutes.review(language)}
+            className="inline-flex min-h-11 items-center rounded-control bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
+          >
+            ▶ {t("mistakes.startReview")}
+          </Link>
+        ) : (
+          <span className="text-sm text-success">✓</span>
+        )}
+      </Card>
       <p className="text-xs text-muted">{t("mistakes.masteryRule", { goal: MASTERY_STREAK })}</p>
 
       <Card>
@@ -132,22 +194,12 @@ export function MistakeListView({ studentId }: { studentId: string }) {
   );
 }
 
-function LanguageBadge({ language }: { language: DictationLanguage }) {
-  const { t } = useApp();
-  return (
-    <span className="inline-flex min-w-7 justify-center rounded-full bg-primary-soft px-1.5 text-xs text-primary">
-      {t(`mistakes.lang.${language}`)}
-    </span>
-  );
-}
-
 function ActiveRow({ record, onDelete }: { record: MistakeRecord; onDelete: () => void }) {
   const { t, services } = useApp();
   const streak = record.correctStreak ?? 0;
 
   return (
     <li className="flex items-center gap-3 py-2">
-      <LanguageBadge language={record.language} />
       <button
         type="button"
         onClick={() => services.tts.speak(record.text, record.language).catch(() => {})}
@@ -185,8 +237,7 @@ function MasteredRow({ record, onDelete }: { record: MistakeRecord; onDelete: ()
 
   return (
     <li className="flex items-center gap-3 py-2">
-      <LanguageBadge language={record.language} />
-      <span className="min-w-0 flex-1 truncate text-foreground">{record.text}</span>
+      <span className="min-w-0 flex-1 break-words text-foreground">{record.text}</span>
       <span className="shrink-0 text-xs text-success">✓ {t("mistakes.masteredAt", { date })}</span>
       <DeleteButton text={record.text} onConfirm={onDelete} />
     </li>

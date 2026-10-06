@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Segmented";
 import { ErrorText } from "@/components/ui/TextInput";
 import type { ParsedBackup } from "@/lib/backup/backupFormat";
-import { errorMessage } from "@/lib/i18n";
+import { errorMessage, joinList } from "@/lib/i18n";
 import type { BackupCounts, ImportMode } from "@/types";
 import { canShareFiles, downloadTextFile, shareTextFile } from "./fileActions";
 
@@ -68,7 +68,7 @@ export function BackupPanel({ onImported }: { onImported: () => Promise<void> })
       const result = await services.backup.importBackup(parsed, mode);
       const lines = [t(mode === "merge" ? "backup.importedMerge" : "backup.importedReplace", { ...result.counts })];
       if (result.renamed.length) {
-        lines.push(t("backup.renamed", { names: result.renamed.map(([from, to]) => `${from} → ${to}`).join("、") }));
+        lines.push(t("backup.renamed", { names: joinList(result.renamed.map(([from, to]) => `${from} → ${to}`), settings.locale) }));
       }
       setParsed(null);
       setNotice(lines.join(" "));

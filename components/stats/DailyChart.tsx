@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/layout/AppProvider";
+import { labelled } from "@/lib/i18n";
 import { accuracy, type DayActivity } from "@/lib/stats/statsCalc";
 import { formatDayKey, formatPercent } from "./format";
 
@@ -58,9 +59,11 @@ export function DailyChart({ days }: { days: DayActivity[] }) {
   const ticks = [0, max / 2, max];
 
   const describe = (d: DayActivity) =>
-    `${formatDayKey(d.date, settings.locale)}：${
-      d.items ? t("progress.tooltip", { items: d.items, correct: d.correct }) : t("progress.tooltipNone")
-    }`;
+    labelled(
+      formatDayKey(d.date, settings.locale),
+      d.items ? t("progress.tooltip", { items: d.items, correct: d.correct }) : t("progress.tooltipNone"),
+      settings.locale,
+    );
 
   const activeDay = active === null ? null : days[active];
 
