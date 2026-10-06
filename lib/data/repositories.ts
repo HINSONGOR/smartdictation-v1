@@ -72,6 +72,27 @@ export interface BackupStore {
   replaceAll(snapshot: LearningDataSnapshot): Promise<void>;
 }
 
+/** What this device last synced with the cloud (per device, never synced itself). */
+export interface SyncState {
+  userId: string;
+  /** Server time of the newest cloud row seen. */
+  cursor: string | null;
+  /** "collection/id" → fingerprint of each record as last synced. */
+  base: Record<string, string>;
+  lastSyncedAt: string | null;
+}
+
+export interface SyncStateRepository {
+  get(): Promise<SyncState | null>;
+  save(state: SyncState): Promise<void>;
+  clear(): Promise<void>;
+}
+
+/** Notifies when learning data on this device changes (so it can be synced). */
+export interface ChangeFeed {
+  subscribe(listener: () => void): () => void;
+}
+
 /** Per-device settings (locale, theme, selected student). */
 export interface SettingsRepository {
   get(): Promise<AppSettings>;
@@ -86,4 +107,6 @@ export interface Repositories {
   practice: PracticeRepository;
   settings: SettingsRepository;
   backup: BackupStore;
+  syncState: SyncStateRepository;
+  changes: ChangeFeed;
 }

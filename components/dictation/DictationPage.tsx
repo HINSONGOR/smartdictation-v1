@@ -12,7 +12,7 @@ export function DictationPage({ language }: { language: DictationLanguage }) {
   return (
     <>
       <PageHeader title={t(language === "zh" ? "nav.chinese" : "nav.english")} />
-      <RequireStudent>
+      <RequireStudent reloadOnSync>
         {(student) => <DictationListView studentId={student.id} language={language} />}
       </RequireStudent>
     </>

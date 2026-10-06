@@ -9,6 +9,8 @@
 import { createDefaultStore } from "./local/keyValueStore";
 import { createLocalRepositories } from "./local/localRepositories";
 import type { Repositories } from "./repositories";
+import type { CloudStore } from "./cloud";
+import { SupabaseCloudStore } from "./supabase/SupabaseCloudStore";
 
 export type DataSource = "local";
 
@@ -24,3 +26,9 @@ export function createRepositories(source: DataSource): Repositories {
 }
 
 export type * from "./repositories";
+export * from "./cloud";
+
+/** Cloud store for sync (V1: Supabase). Only the composition root calls this. */
+export function createCloudStore(url: string, publishableKey: string): CloudStore {
+  return new SupabaseCloudStore(url, publishableKey);
+}

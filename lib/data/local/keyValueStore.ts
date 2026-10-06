@@ -6,11 +6,39 @@ export interface KeyValueStore {
   read<T>(key: string): T | null;
   write<T>(key: string, value: T): void;
   remove(key: string): void;
+  /** Called with the key after every write / remove. */
+  subscribe(listener: (key: string) => void): () => void;
 }
 
 export const STORAGE_PREFIX = "sd:v1:";
 
-export class BrowserLocalStore implements KeyValueStore {
+abstract class ObservableStore implements KeyValueStore {
+  private readonly listeners = new Set<(key: string) => void>();
+
+  abstract read<T>(key: string): T | null;
+  protected abstract set(key: string, raw: string | null): void;
+
+  write<T>(key: string, value: T): void {
+    this.set(key, JSON.stringify(value));
+    this.emit(key);
+  }
+
+  remove(key: string): void {
+    this.set(key, null);
+    this.emit(key);
+  }
+
+  subscribe(listener: (key: string) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private emit(key: string) {
+    for (const listener of this.listeners) listener(key);
+  }
+}
+
+export class BrowserLocalStore extends ObservableStore {
   read<T>(key: string): T | null {
     try {
       const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
@@ -20,17 +48,14 @@ export class BrowserLocalStore implements KeyValueStore {
     }
   }
 
-  write<T>(key: string, value: T): void {
-    window.localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
-  }
-
-  remove(key: string): void {
-    window.localStorage.removeItem(STORAGE_PREFIX + key);
+  protected set(key: string, raw: string | null): void {
+    if (raw === null) window.localStorage.removeItem(STORAGE_PREFIX + key);
+    else window.localStorage.setItem(STORAGE_PREFIX + key, raw);
   }
 }
 
 /** Used during SSR, in private modes where localStorage throws, and in tests. */
-export class MemoryStore implements KeyValueStore {
+export class MemoryStore extends ObservableStore {
   private data = new Map<string, string>();
 
   read<T>(key: string): T | null {
@@ -38,12 +63,9 @@ export class MemoryStore implements KeyValueStore {
     return raw === undefined ? null : (JSON.parse(raw) as T);
   }
 
-  write<T>(key: string, value: T): void {
-    this.data.set(key, JSON.stringify(value));
-  }
-
-  remove(key: string): void {
-    this.data.delete(key);
+  protected set(key: string, raw: string | null): void {
+    if (raw === null) this.data.delete(key);
+    else this.data.set(key, raw);
   }
 }
 

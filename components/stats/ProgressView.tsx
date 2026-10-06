@@ -20,7 +20,7 @@ export function ProgressPage() {
   return (
     <>
       <PageHeader title={t("progress.title")} />
-      <RequireStudent>{(student) => <ProgressView studentId={student.id} />}</RequireStudent>
+      <RequireStudent reloadOnSync>{(student) => <ProgressView studentId={student.id} />}</RequireStudent>
     </>
   );
 }

@@ -3,8 +3,10 @@
  * This is the only module (besides lib/data itself) that knows which data source is used.
  */
 import { BackupService } from "@/lib/backup/BackupService";
+import { CLOUD_CONFIG } from "@/lib/cloud/config";
+import { CloudSyncService } from "@/lib/cloud/CloudSyncService";
 import { APP_CONFIG } from "@/lib/config";
-import { createRepositories } from "@/lib/data";
+import { createCloudStore, createRepositories } from "@/lib/data";
 import { DictationService } from "@/lib/dictation/DictationService";
 import { PracticeService } from "@/lib/dictation/PracticeService";
 import { MistakeService } from "@/lib/mistakes/MistakeService";
@@ -21,6 +23,7 @@ export interface AppServices {
   practice: PracticeService;
   stats: StatsService;
   backup: BackupService;
+  cloud: CloudSyncService;
   tts: TTSService;
 }
 
@@ -42,6 +45,13 @@ export function getServices(): AppServices {
       practice: new PracticeService(repos.practice, repos.mistakes),
       stats: new StatsService(repos.practice, repos.mistakes, repos.content),
       backup: new BackupService(repos.backup, repos.settings),
+      cloud: new CloudSyncService(
+        createCloudStore(CLOUD_CONFIG.url, CLOUD_CONFIG.publishableKey),
+        repos.backup,
+        repos.owner,
+        repos.syncState,
+        repos.changes,
+      ),
       tts: new TTSService(createTTSProvider(APP_CONFIG.ttsProvider)),
     };
   }

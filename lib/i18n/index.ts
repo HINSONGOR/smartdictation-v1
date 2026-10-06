@@ -1,3 +1,4 @@
+import { CloudError } from "@/lib/data/cloud";
 import { ServiceError } from "@/lib/errors";
 import { DICTATION_LIMITS, MAX_STUDENTS, STUDENT_NAME_MAX_LENGTH, type Locale } from "@/types";
 import { en } from "./messages/en";
@@ -52,6 +53,6 @@ const ERROR_VARS: TranslateVars = {
 
 /** Map any thrown error to a localized message. */
 export function errorMessage(t: Translate, error: unknown): string {
-  if (error instanceof ServiceError) return t(`error.${error.code}` as MessageKey, ERROR_VARS);
+  if (error instanceof ServiceError || error instanceof CloudError) return t(`error.${error.code}` as MessageKey, ERROR_VARS);
   return t("error.unknown");
 }

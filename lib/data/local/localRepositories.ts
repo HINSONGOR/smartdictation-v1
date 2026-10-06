@@ -21,6 +21,9 @@ import type {
   SettingsRepository,
   StudentRepository,
   StudentScopedStore,
+  SyncState,
+  SyncStateRepository,
+  ChangeFeed,
 } from "../repositories";
 import type { KeyValueStore } from "./keyValueStore";
 import { LocalCollection } from "./localCollection";
@@ -37,6 +40,7 @@ const KEYS = {
   mistakes: "mistakes",
   practice: "practice-sessions",
   settings: "settings",
+  syncState: "sync-state",
 } as const;
 
 class LocalStudentRepository implements StudentRepository {
@@ -177,6 +181,31 @@ class LocalBackupStore implements BackupStore {
   }
 }
 
+class LocalSyncStateRepository implements SyncStateRepository {
+  constructor(private readonly store: KeyValueStore) {}
+
+  async get() {
+    return this.store.read<SyncState>(KEYS.syncState);
+  }
+
+  async save(state: SyncState) {
+    this.store.write(KEYS.syncState, state);
+  }
+
+  async clear() {
+    this.store.remove(KEYS.syncState);
+  }
+}
+
+/** Learning-data keys whose changes should be synced (not settings / sync bookkeeping). */
+const SYNCED_KEYS = new Set<string>([KEYS.students, KEYS.owner, KEYS.content, KEYS.mistakes, KEYS.practice]);
+
+function createChangeFeed(store: KeyValueStore): ChangeFeed {
+  return {
+    subscribe: (listener) => store.subscribe((key) => SYNCED_KEYS.has(key) && listener()),
+  };
+}
+
 class LocalSettingsRepository implements SettingsRepository {
   constructor(private readonly store: KeyValueStore) {}
 
@@ -197,6 +226,8 @@ export function createLocalRepositories(store: KeyValueStore): Repositories {
     mistakes: new LocalMistakeRepository(store),
     practice: new LocalPracticeRepository(store),
     backup: new LocalBackupStore(store),
+    syncState: new LocalSyncStateRepository(store),
+    changes: createChangeFeed(store),
     settings: new LocalSettingsRepository(store),
   };
 }

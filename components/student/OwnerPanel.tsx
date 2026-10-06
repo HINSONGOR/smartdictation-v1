@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { BackupPanel } from "@/components/backup/BackupPanel";
+import { CloudSyncPanel } from "@/components/cloud/CloudSyncPanel";
 import { useApp } from "@/components/layout/AppProvider";
 import { Button } from "@/components/ui/Button";
 import { ErrorText, PinInput, TextInput } from "@/components/ui/TextInput";
@@ -150,6 +151,10 @@ export function OwnerPanel({ onChanged }: { onChanged: () => void }) {
         </div>
         <ErrorText>{atLimit ? t("error.student.limitReached", { maxStudents: MAX_STUDENTS }) : addError}</ErrorText>
       </form>
+
+      <div className="border-t border-border pt-4">
+        <CloudSyncPanel />
+      </div>
 
       <div className="border-t border-border pt-4">
         <BackupPanel onImported={() => afterChange()} />

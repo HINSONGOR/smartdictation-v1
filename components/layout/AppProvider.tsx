@@ -21,6 +21,8 @@ interface AppContextValue {
   setTheme(theme: ThemeName): Promise<void>;
   /** Re-read settings + current student after a service changed them. */
   refresh(): Promise<void>;
+  /** Bumped when cloud sync wrote new data to this device (list screens reload). */
+  dataVersion: number;
 }
 
 interface LoadedState {
@@ -41,11 +43,33 @@ async function load(services: AppServices): Promise<LoadedState> {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<LoadedState | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
   const pathname = usePathname();
 
   useEffect(() => {
     // Local data lives in the browser, so services are created client-side only.
-    load(getServices()).then(setState);
+    const services = getServices();
+    load(services).then(setState);
+
+    // Cloud sync (only does anything once the family account is logged in on this device).
+    const stopApplied = services.cloud.onRemoteApplied(() => {
+      load(services).then(setState);
+      setDataVersion((v) => v + 1);
+    });
+    void services.cloud.start();
+    const syncSoon = () => services.cloud.requestSync(500);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") syncSoon();
+    };
+    window.addEventListener("online", syncSoon);
+    window.addEventListener("focus", syncSoon);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopApplied();
+      window.removeEventListener("online", syncSoon);
+      window.removeEventListener("focus", syncSoon);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   const preferredLocale = state?.settings.locale ?? DEFAULT_SETTINGS.locale;
@@ -87,9 +111,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setLocale,
             setTheme,
             refresh,
+            dataVersion,
           }
         : null,
-    [state, locale, preferredLocale, t, setLocale, setTheme, refresh],
+    [state, locale, preferredLocale, t, setLocale, setTheme, refresh, dataVersion],
   );
 
   if (!value) {

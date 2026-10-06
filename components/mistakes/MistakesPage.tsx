@@ -11,7 +11,7 @@ export function MistakesPage() {
   return (
     <>
       <PageHeader title={t("nav.mistakes")} />
-      <RequireStudent>{(student) => <MistakeListView studentId={student.id} />}</RequireStudent>
+      <RequireStudent reloadOnSync>{(student) => <MistakeListView studentId={student.id} />}</RequireStudent>
     </>
   );
 }
