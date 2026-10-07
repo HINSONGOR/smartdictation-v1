@@ -17,7 +17,7 @@ import { StudentManageRow } from "./StudentManageRow";
  * Local convenience lock only — not security.
  */
 export function OwnerPanel({ onChanged }: { onChanged: () => void }) {
-  const { t, services, refresh } = useApp();
+  const { t, services, refresh, dataVersion } = useApp();
   const [unlocked, setUnlocked] = useState(false);
   const [ownerPin, setOwnerPin] = useState("");
   const [unlockError, setUnlockError] = useState<string | null>(null);
@@ -29,9 +29,11 @@ export function OwnerPanel({ onChanged }: { onChanged: () => void }) {
   const [pin, setPin] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
 
+  // dataVersion: cloud sync may have brought students / the family owner PIN from another device.
   useEffect(() => {
     services.students.isOwnerPinDefault().then(setPinIsDefault);
-  }, [services]);
+    if (unlocked) services.students.listAllForOwner().then(setStudents);
+  }, [services, dataVersion, unlocked]);
 
   async function reload() {
     setStudents(await services.students.listAllForOwner());

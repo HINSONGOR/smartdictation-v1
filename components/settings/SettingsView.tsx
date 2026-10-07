@@ -14,9 +14,11 @@ import { LanguageSelector } from "./LanguageSelector";
 import { ThemeSelector } from "./ThemeSelector";
 
 export function SettingsView() {
-  const { t } = useApp();
-  // Bumped when the owner adds / (de)activates a profile so the switcher reloads.
-  const [profilesVersion, setProfilesVersion] = useState(0);
+  const { t, dataVersion } = useApp();
+  // Bumped when the owner adds / (de)activates a profile so the switcher reloads
+  // (dataVersion: cloud sync brought students from another device).
+  const [ownerVersion, setOwnerVersion] = useState(0);
+  const profilesVersion = ownerVersion + dataVersion;
 
   return (
     <div className="space-y-4">
@@ -38,7 +40,7 @@ export function SettingsView() {
 
         <Card>
           <SectionTitle>{t("owner.title")}</SectionTitle>
-          <OwnerPanel onChanged={() => setProfilesVersion((v) => v + 1)} />
+          <OwnerPanel onChanged={() => setOwnerVersion((v) => v + 1)} />
         </Card>
 
         <Card>
