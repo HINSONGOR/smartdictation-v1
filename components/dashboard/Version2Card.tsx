@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { SparkIcon } from "@/components/ui/icons";
 import type { MessageKey } from "@/lib/i18n";
 
-const V2_FEATURES: MessageKey[] = ["v2.supabase", "v2.ocr", "v2.ai", "v2.cloudTts", "v2.smartLearning"];
+const V2_FEATURES: MessageKey[] = ["v2.ocr", "v2.ai", "v2.cloudTts", "v2.smartLearning"];
 
 /** Version 2 entry point — informational only, nothing is implemented in V1. */
 export function Version2Card() {

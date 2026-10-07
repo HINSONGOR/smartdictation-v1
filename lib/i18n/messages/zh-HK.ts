@@ -107,7 +107,6 @@ export const zhHK = {
 
   "v2.title": "Version 2",
   "v2.subtitle": "即將加入：",
-  "v2.supabase": "雲端資料庫（Supabase / Firestore）",
   "v2.ocr": "OCR 拍照輸入默書範圍",
   "v2.ai": "AI 輔助",
   "v2.cloudTts": "Cloud TTS 高質素語音",
@@ -182,6 +181,7 @@ export const zhHK = {
   "cloud.signOutYes": "確定登出",
   "cloud.signedOut": "已登出。呢部裝置嘅資料仍然保留。",
   "cloud.syncDone": "同步完成。",
+  "cloud.homeSynced": "已同步到雲端",
   "cloud.autoNote": "有改動、重新開 App 或者返回網絡時會自動同步。",
   "cloud.offline": "而家冇網絡，返回網絡後會自動同步。",
 

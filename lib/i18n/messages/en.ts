@@ -108,7 +108,6 @@ export const en: Messages = {
 
   "v2.title": "Version 2",
   "v2.subtitle": "Coming soon:",
-  "v2.supabase": "Cloud database (Supabase / Firestore)",
   "v2.ocr": "OCR — snap a photo of the word list",
   "v2.ai": "AI assistance",
   "v2.cloudTts": "Cloud TTS natural voices",
@@ -183,6 +182,7 @@ export const en: Messages = {
   "cloud.signOutYes": "Log out",
   "cloud.signedOut": "Logged out. Data on this device is kept.",
   "cloud.syncDone": "Sync complete.",
+  "cloud.homeSynced": "Synced to the cloud",
   "cloud.autoNote": "Syncs automatically after changes, when the app opens and when back online.",
   "cloud.offline": "You're offline — it will sync when back online.",
 
