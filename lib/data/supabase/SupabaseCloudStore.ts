@@ -62,7 +62,12 @@ function toCloudError(error: unknown): CloudError {
 export class SupabaseCloudStore implements CloudStore, OcrEngine {
   private readonly client: SupabaseClient;
 
-  constructor(url: string, publishableKey: string) {
+  constructor(
+    url: string,
+    publishableKey: string,
+    /** Name of the Edge Function running supabase/functions/ocr. */
+    private readonly ocrFunction = "ocr",
+  ) {
     this.client = createClient(url, publishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: "sd:v1:cloud-auth" },
     });
@@ -123,7 +128,7 @@ export class SupabaseCloudStore implements CloudStore, OcrEngine {
   }
 
   async recognize(request: OcrRequest): Promise<string> {
-    const { data, error } = await this.client.functions.invoke<{ text: string }>("ocr", { body: request });
+    const { data, error } = await this.client.functions.invoke<{ text: string }>(this.ocrFunction, { body: request });
     if (error) {
       // FunctionsHttpError carries the function's JSON reply ({ error: code }).
       const reply = await (error as { context?: Response }).context?.json?.().catch(() => null);

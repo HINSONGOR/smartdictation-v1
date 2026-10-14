@@ -6,4 +6,6 @@
 export const CLOUD_CONFIG = {
   url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://fuxulzawnxzrlibntehn.supabase.co",
   publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_f96LaJw842ueyel5_nnxWg_6vU4KBF0",
+  /** Edge Function running supabase/functions/ocr (the dashboard named it "bright-task"). */
+  ocrFunction: process.env.NEXT_PUBLIC_SUPABASE_OCR_FUNCTION ?? "bright-task",
 };

@@ -35,7 +35,7 @@ let instance: AppServices | null = null;
 export function getServices(): AppServices {
   if (!instance) {
     const repos = createRepositories(APP_CONFIG.dataSource);
-    const cloudStore = createCloudStore(CLOUD_CONFIG.url, CLOUD_CONFIG.publishableKey);
+    const cloudStore = createCloudStore(CLOUD_CONFIG.url, CLOUD_CONFIG.publishableKey, CLOUD_CONFIG.ocrFunction);
     const cloud = new CloudSyncService(cloudStore, repos.backup, repos.owner, repos.syncState, repos.changes);
     instance = {
       students: new StudentService(repos.students, repos.owner, repos.settings, {

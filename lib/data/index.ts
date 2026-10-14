@@ -30,6 +30,6 @@ export * from "./cloud";
 
 /** Cloud store for sync (V1: Supabase). Only the composition root calls this. */
 /** One Supabase client serves both sync and photo OCR (OCR uses the same login). */
-export function createCloudStore(url: string, publishableKey: string): CloudStore & OcrEngine {
-  return new SupabaseCloudStore(url, publishableKey);
+export function createCloudStore(url: string, publishableKey: string, ocrFunction?: string): CloudStore & OcrEngine {
+  return new SupabaseCloudStore(url, publishableKey, ocrFunction);
 }

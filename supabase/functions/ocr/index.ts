@@ -1,5 +1,5 @@
 // SmartDictation — photo → text (OCR) with Gemini.
-// Deploy in Supabase → Edge Functions (name: "ocr"), and add the secret GEMINI_API_KEY
+// Deploy in Supabase → Edge Functions (live name: "bright-task", see lib/cloud/config.ts ocrFunction), and add the secret GEMINI_API_KEY
 // (optional: GEMINI_MODELS, comma-separated, tried in order). Only logged-in family accounts can call it.
 
 /** Tried in order: when one is busy (429 / 503) or fails, the next one takes over. */
