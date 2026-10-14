@@ -13,6 +13,8 @@ import {
 
 const TABLE = "sync_records";
 const PAGE = 1000;
+/** Stop waiting for a photo to be read after this long. */
+const OCR_TIMEOUT_MS = 90_000;
 
 interface Row {
   collection: RemoteRecord["collection"];
@@ -128,8 +130,14 @@ export class SupabaseCloudStore implements CloudStore, OcrEngine {
   }
 
   async recognize(request: OcrRequest): Promise<string> {
-    const { data, error } = await this.client.functions.invoke<{ text: string }>(this.ocrFunction, { body: request });
+    const { data, error } = await this.client.functions.invoke<{ text: string }>(this.ocrFunction, {
+      body: request,
+      timeout: OCR_TIMEOUT_MS,
+    });
     if (error) {
+      if (/abort|timeout/i.test(`${error.name} ${error.message} ${String((error as { context?: unknown }).context)}`)) {
+        throw new CloudError("cloud.ocrTimeout", error.message);
+      }
       // FunctionsHttpError carries the function's JSON reply ({ error: code }).
       const reply = await (error as { context?: Response }).context?.json?.().catch(() => null);
       const codes: Record<string, CloudErrorCode> = {

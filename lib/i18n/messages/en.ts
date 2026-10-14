@@ -413,6 +413,7 @@ export const en: Messages = {
   "error.cloud.ocrNotSetUp": "Photo input isn't set up yet (Supabase needs the ocr function and GEMINI_API_KEY).",
   "error.cloud.ocrBusy": "Gemini is busy right now. Please try again in a moment.",
   "error.cloud.ocrFailed": "Couldn't read the photo. Please try again.",
+  "error.cloud.ocrTimeout": "Reading the photo took too long. Please try again.",
   "error.cloud.network": "Can't reach the cloud. Check your connection.",
   "error.cloud.notSetUp": "Cloud database not set up yet (run supabase/schema.sql first).",
   "error.cloud.unknown": "Cloud sync failed. Please try again.",

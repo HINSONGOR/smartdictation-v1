@@ -412,6 +412,7 @@ export const zhHK = {
   "error.cloud.ocrNotSetUp": "影相輸入未設定好（Supabase 未有 ocr function 或者 GEMINI_API_KEY）。",
   "error.cloud.ocrBusy": "Gemini 而家太忙，請等一陣再試。",
   "error.cloud.ocrFailed": "讀唔到相入面嘅字，請再試一次。",
+  "error.cloud.ocrTimeout": "等咗太耐都未讀到張相，請再試一次（網絡慢可以試細張啲嘅相）。",
   "error.cloud.network": "連唔到雲端，請檢查網絡。",
   "error.cloud.notSetUp": "雲端資料庫未設定好（請先執行 supabase/schema.sql）。",
   "error.cloud.unknown": "雲端同步出錯，請再試一次。",

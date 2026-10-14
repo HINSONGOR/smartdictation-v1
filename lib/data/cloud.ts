@@ -39,6 +39,7 @@ export type CloudErrorCode =
   | "cloud.ocrNotSetUp"
   | "cloud.ocrBusy"
   | "cloud.ocrFailed"
+  | "cloud.ocrTimeout"
   | "cloud.network"
   | "cloud.notSetUp"
   | "cloud.unknown";

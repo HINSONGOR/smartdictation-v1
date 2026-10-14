@@ -8,6 +8,8 @@ const DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flas
 const PUBLISHABLE_KEY = "sb_publishable_f96LaJw842ueyel5_nnxWg_6vU4KBF0";
 /** ~6 MB of base64; the app shrinks photos to well below this. */
 const MAX_IMAGE_CHARS = 8_000_000;
+/** Give up on one model after this long and let the next one try. */
+const MODEL_TIMEOUT_MS = 25_000;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -82,10 +84,11 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: request,
-    }).catch(() => null);
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
+    }).catch(() => null); // network error or too slow
     if (!res?.ok) {
-      // Busy / unavailable / model not offered to this key → try the next model.
-      busy ||= res?.status === 429 || res?.status === 503;
+      // Busy / too slow / unavailable / model not offered to this key → try the next model.
+      busy ||= !res || res.status === 429 || res.status === 503;
       console.error("gemini", model, res?.status, res ? await res.text() : "network");
       continue;
     }
