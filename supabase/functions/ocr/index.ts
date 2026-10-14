@@ -24,7 +24,7 @@ const json = (body: unknown, status = 200) =>
 function prompt(language: Language, target: Target): string {
   const lang =
     language === "zh"
-      ? "The text is Chinese (Traditional Chinese as printed — do not convert to Simplified). Keep full-width Chinese punctuation exactly as printed."
+      ? "The text is Chinese (Traditional Chinese as printed — do not convert to Simplified). Keep full-width Chinese punctuation exactly as printed. The book may print Hanyu Pinyin above or beside the characters (e.g. chūn tiān): leave all pinyin out completely and output only the Chinese characters and punctuation."
       : "The text is English. Keep capital letters and punctuation exactly as printed.";
   const shape =
     target === "words"
