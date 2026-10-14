@@ -1,6 +1,6 @@
-import type { InputHTMLAttributes } from "react";
+import type { ComponentProps, InputHTMLAttributes } from "react";
 
-export function TextInput({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
+export function TextInput({ className = "", ...props }: ComponentProps<"input">) {
   return (
     <input
       // 16px font prevents iOS Safari from zooming into the field.

@@ -8,9 +8,9 @@ import { isAnswerCorrect } from "./answerCheck";
  * typing: question → (submit) → feedback → (next) → question … → done
  * paper:  question → (reveal) → revealed → (selfMark ✓/✗, can change) → (next) → question … → done
  *
- * Paper mode groups consecutive sentences of the same paragraph: the student listens sentence by sentence
- * ("next" / "previous" inside the group), the whole paragraph is revealed after its last sentence,
- * and every sentence is self-marked separately.
+ * Both modes group consecutive sentences of the same paragraph: the student listens sentence by sentence
+ * ("next" / "previous" inside the group). After the last sentence the whole paragraph is checked at once
+ * (typing: submitGroup with every sentence's typed answer; paper: revealed and self-marked per sentence).
  */
 export type PracticePhase = "question" | "feedback" | "revealed" | "done";
 
@@ -27,6 +27,8 @@ export interface PracticeState {
 
 export type PracticeAction =
   | { type: "submit"; answer: string }
+  /** Typing mode, last sentence of a paragraph: the typed answer of every sentence (by item id). */
+  | { type: "submitGroup"; answers: Record<string, string> }
   | { type: "reveal" }
   /** itemId defaults to the current item; must be inside the revealed group. */
   | { type: "selfMark"; correct: boolean; itemId?: string }
@@ -78,11 +80,11 @@ export function currentAnswer(state: PracticeState): PracticeAnswer | undefined 
 
 /**
  * Index range [start, end] of the group the current item belongs to.
- * In paper mode, consecutive sentences of one paragraph form a group; everything else is its own group.
+ * Consecutive sentences of one paragraph form a group; everything else is its own group.
  */
 export function groupRange(state: PracticeState): [number, number] {
   const item = currentItem(state);
-  if (state.mode !== "paper" || item.kind !== "sentence" || item.paragraphNumber === undefined) {
+  if (item.kind !== "sentence" || item.paragraphNumber === undefined) {
     return [state.index, state.index];
   }
   const sameParagraph = (i: number) =>
@@ -115,20 +117,30 @@ function advancePastGroup(state: PracticeState): PracticeState {
   return next >= state.items.length ? { ...state, phase: "done" } : { ...state, index: next, phase: "question" };
 }
 
+function typedAnswer(item: PracticeItem, answer: string, state: PracticeState): PracticeAnswer {
+  return {
+    itemId: item.id,
+    text: item.text,
+    kind: item.kind,
+    answer,
+    correct: isAnswerCorrect(answer, item.text, state.language),
+  };
+}
+
 export function practiceReducer(state: PracticeState, action: PracticeAction): PracticeState {
   const item = currentItem(state);
   const [start, end] = groupRange(state);
   switch (action.type) {
     case "submit": {
-      if (state.mode !== "typing" || state.phase !== "question") return state;
-      const answer: PracticeAnswer = {
-        itemId: item.id,
-        text: item.text,
-        kind: item.kind,
-        answer: action.answer,
-        correct: isAnswerCorrect(action.answer, item.text, state.language),
-      };
-      return { ...state, phase: "feedback", answers: [...state.answers, answer] };
+      // A single item (a paragraph is submitted as a whole with submitGroup).
+      if (state.mode !== "typing" || state.phase !== "question" || start !== end) return state;
+      return { ...state, phase: "feedback", answers: [...state.answers, typedAnswer(item, action.answer, state)] };
+    }
+
+    case "submitGroup": {
+      if (state.mode !== "typing" || state.phase !== "question" || state.index !== end) return state;
+      const typed = state.items.slice(start, end + 1).map((i) => typedAnswer(i, action.answers[i.id] ?? "", state));
+      return { ...state, phase: "feedback", answers: [...state.answers, ...typed] };
     }
 
     case "reveal":
@@ -155,8 +167,8 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
 
     case "next":
       if (state.phase === "feedback") return advancePastGroup(state);
-      // Inside a paragraph: listen to the next sentence without revealing.
-      if (state.phase === "question" && state.mode === "paper" && state.index < end) {
+      // Inside a paragraph: listen to the next sentence without checking.
+      if (state.phase === "question" && state.index < end) {
         return { ...state, index: state.index + 1 };
       }
       if (state.phase === "revealed" && state.items.slice(start, end + 1).every((i) => answerFor(state, i.id))) {
@@ -165,7 +177,7 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
       return state;
 
     case "previous":
-      return state.phase === "question" && state.mode === "paper" && state.index > start
+      return state.phase === "question" && state.index > start
         ? { ...state, index: state.index - 1 }
         : state;
   }

@@ -152,10 +152,47 @@ describe("paper mode: a paragraph is dictated sentence by sentence, then reveale
     expect(practiceReducer(toFirstSentence(), { type: "selfMarkAll", correct: true }).answers).toHaveLength(1); // not revealed: no-op beyond the word
   });
 
-  it("typing mode keeps checking sentence by sentence (no grouping)", () => {
-    const s = startPractice(PASSAGE, { language: "zh", mode: "typing", order: "sequential" });
-    const atSentence = run(s, [{ type: "submit", answer: "春天" }, { type: "next" }]);
-    expect(groupRange(atSentence)).toEqual([1, 1]);
+});
+
+describe("typing mode: a paragraph is typed sentence by sentence, then checked as a whole", () => {
+  const PASSAGE: PracticeItem[] = [
+    { id: "w1", text: "spring", kind: "word" },
+    { id: "p1:s1", text: "Spring is here,", kind: "sentence", paragraphNumber: 1 },
+    { id: "p1:s2", text: "flowers bloom.", kind: "sentence", paragraphNumber: 1 },
+    { id: "p2:s1", text: "Birds sing.", kind: "sentence", paragraphNumber: 2 },
+  ];
+  const toParagraph = () =>
+    run(startPractice(PASSAGE, { language: "en", mode: "typing", order: "sequential" }), [
+      { type: "submit", answer: "spring" },
+      { type: "next" },
+    ]);
+
+  it("groups the paragraph; single submit is ignored inside it; next / previous move between sentences", () => {
+    let s = toParagraph();
+    expect(groupRange(s)).toEqual([1, 2]);
+    expect(practiceReducer(s, { type: "submit", answer: "x" })).toBe(s);
+    expect(practiceReducer(s, { type: "submitGroup", answers: {} })).toBe(s); // not at the last sentence yet
+    s = practiceReducer(s, { type: "next" });
+    expect(currentItem(s).id).toBe("p1:s2");
+    expect(practiceReducer(s, { type: "next" })).toBe(s); // must check at the end
+    expect(currentItem(practiceReducer(s, { type: "previous" })).id).toBe("p1:s1");
+  });
+
+  it("checks every sentence of the paragraph at once, then moves to the next paragraph", () => {
+    let s = run(toParagraph(), [
+      { type: "next" },
+      { type: "submitGroup", answers: { "p1:s1": "Spring is here,", "p1:s2": "flowers bloom" } },
+    ]);
+    expect(s.phase).toBe("feedback");
+    expect(s.answers.slice(1).map((a) => [a.itemId, a.correct])).toEqual([
+      ["p1:s1", true],
+      ["p1:s2", false], // missing full stop
+    ]);
+    s = practiceReducer(s, { type: "next" });
+    expect(currentItem(s).id).toBe("p2:s1");
+    s = run(s, [{ type: "submitGroup", answers: { "p2:s1": "Birds sing." } }, { type: "next" }]);
+    expect(s.phase).toBe("done");
+    expect(summarize(s)).toMatchObject({ total: 4, correct: 3, wrong: [{ itemId: "p1:s2" }] });
   });
 });
 

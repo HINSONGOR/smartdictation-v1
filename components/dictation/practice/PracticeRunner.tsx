@@ -19,7 +19,9 @@ import {
   type PracticeAction,
   type PracticeState,
 } from "@/lib/dictation/practiceSession";
+import { diffAnswer } from "@/lib/dictation/answerDiff";
 import type { MessageKey } from "@/lib/i18n";
+import { RedPenLine } from "./RedPen";
 import type { ChineseVoice, PracticeItem, PracticeSpeed } from "@/types";
 
 const SPEECH_RATE: Record<PracticeSpeed, number> = { slow: 0.6, normal: 0.9 };
@@ -192,8 +194,24 @@ export function PracticeRunner({ state, speed, onAction }: Props) {
       )}
 
       {/* Typing mode: type, then check */}
-      {state.phase === "question" && state.mode === "typing" && (
+      {state.phase === "question" && state.mode === "typing" && !isParagraph && (
         <TypingQuestion key={`answer-${item.id}`} item={item} language={language} onAction={onAction} />
+      )}
+
+      {/* Typing mode, paragraph: one box per sentence heard so far; check the whole paragraph at the end */}
+      {state.phase === "question" && state.mode === "typing" && isParagraph && (
+        <TypingParagraph
+          key={`paragraph-${group[0].id}`}
+          items={group}
+          current={state.index - groupStart}
+          language={language}
+          onAction={onAction}
+        />
+      )}
+
+      {/* Typing mode, paragraph: every sentence marked with the red pen */}
+      {state.phase === "feedback" && isParagraph && (
+        <TypingParagraphResult state={state} items={group} language={language} nextLabel={nextLabel} onAction={onAction} />
       )}
 
       {/* Paper mode, paragraph: whole paragraph answer, each sentence marked separately */}
@@ -235,7 +253,7 @@ export function PracticeRunner({ state, speed, onAction }: Props) {
       )}
 
       {/* Typing mode: automatic result */}
-      {state.phase === "feedback" && answer && (
+      {state.phase === "feedback" && !isParagraph && answer && (
         <div
           role="status"
           className={`space-y-3 rounded-control border-2 p-4 ${answer.correct ? "border-success" : "border-danger"}`}
@@ -249,12 +267,11 @@ export function PracticeRunner({ state, speed, onAction }: Props) {
               {t(answer.correct ? "practice.correct" : "practice.wrong")}
             </p>
           </div>
-          {!answer.correct && (
-            <p className="text-sm text-muted">
-              {t("practice.yourAnswer", { answer: answer.answer?.trim() || t("practice.noAnswer") })}
-            </p>
+          {answer.correct ? (
+            <AnswerPanel item={item} language={language} />
+          ) : (
+            <MarkedAnswer item={item} typed={answer.answer ?? ""} language={language} large={item.kind === "word"} />
           )}
-          <AnswerPanel item={item} language={language} />
           <Button autoFocus className="w-full text-base" onClick={() => onAction({ type: "next" })}>
             {t(nextLabel)}
           </Button>
@@ -386,6 +403,174 @@ function HintReveal({ hint }: { hint?: string }) {
     <div className="text-center">
       <Button variant="ghost" onClick={() => setShown(true)}>
         {t("practice.showHint")}
+      </Button>
+    </div>
+  );
+}
+
+/** Wrong typed answer: the student's line and the correct line, marked with the red pen. */
+function MarkedAnswer({
+  item,
+  typed,
+  language,
+  large = false,
+  strokes = true,
+}: {
+  item: PracticeItem;
+  typed: string;
+  language: PracticeState["language"];
+  large?: boolean;
+  /** Chinese: play the stroke animation of the correct answer. */
+  strokes?: boolean;
+}) {
+  const { t } = useApp();
+  const diff = diffAnswer(typed, item.text, language);
+  const size = large ? "text-3xl" : "text-xl";
+  return (
+    <div className="space-y-2 rounded-control bg-surface-muted p-3">
+      <div>
+        <p className="text-xs font-medium text-muted">{t("practice.youWrote")}</p>
+        <p className={`leading-relaxed text-foreground ${size}`}>
+          <RedPenLine tokens={diff.answer} variant="answer" />
+        </p>
+      </div>
+      <div>
+        <p className="text-xs font-medium text-muted">{t("practice.correctAnswer")}</p>
+        <p className={`font-semibold leading-relaxed text-foreground ${size}`}>
+          <RedPenLine tokens={diff.expected} variant="expected" />
+        </p>
+      </div>
+      {language === "zh" && strokes && <StrokeAnimation key={item.id} text={item.text} hint={t("practice.strokeHint")} />}
+      {item.hint && <p className="text-sm text-muted">{t("practice.hint", { hint: item.hint })}</p>}
+      <p className="text-xs text-muted">{t("practice.redPenNote")}</p>
+    </div>
+  );
+}
+
+/** Typing a paragraph: listen sentence by sentence, one box per sentence heard so far, check at the end. */
+function TypingParagraph({
+  items,
+  current,
+  language,
+  onAction,
+}: {
+  items: PracticeItem[];
+  /** Position of the sentence being read (0-based within the paragraph). */
+  current: number;
+  language: PracticeState["language"];
+  onAction: (action: PracticeAction) => void;
+}) {
+  const { t } = useApp();
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const currentRef = useRef<HTMLInputElement>(null);
+  const atEnd = current === items.length - 1;
+
+  useEffect(() => {
+    currentRef.current?.focus();
+  }, [current]);
+
+  function forward(event?: FormEvent) {
+    event?.preventDefault();
+    onAction(atEnd ? { type: "submitGroup", answers: drafts } : { type: "next" });
+  }
+
+  return (
+    <form onSubmit={forward} className="space-y-3">
+      <p className="text-center text-sm text-muted">{t(atEnd ? "practice.typeParagraphEndHint" : "practice.typeSentenceHint")}</p>
+      <ol className="space-y-2">
+        {items.slice(0, current + 1).map((sentence, k) => (
+          <li key={sentence.id}>
+            <label className="block space-y-1">
+              <span className="text-xs text-muted">{t("practice.sentenceN", { n: k + 1 })}</span>
+              <TextInput
+                ref={k === current ? currentRef : undefined}
+                value={drafts[sentence.id] ?? ""}
+                onChange={(e) => setDrafts((d) => ({ ...d, [sentence.id]: e.target.value }))}
+                placeholder={k === current ? t("practice.answerPlaceholder") : undefined}
+                lang={language === "zh" ? "zh-HK" : "en"}
+                // Autocorrect / auto-capitalise would change the answer (case and spelling are checked).
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint={atEnd && k === current ? "done" : "next"}
+                className={`text-lg ${k === current ? "border-primary" : ""}`}
+              />
+            </label>
+          </li>
+        ))}
+      </ol>
+      <div className="flex gap-2">
+        {current > 0 && (
+          <Button variant="secondary" className="min-h-12" onClick={() => onAction({ type: "previous" })}>
+            {t("practice.previousSentence")}
+          </Button>
+        )}
+        <Button type="submit" className="min-h-12 flex-1 text-base">
+          {t(atEnd ? "practice.checkParagraph" : "practice.nextSentence")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Typing a paragraph: result for every sentence, wrong ones marked with the red pen. */
+function TypingParagraphResult({
+  state,
+  items,
+  language,
+  nextLabel,
+  onAction,
+}: {
+  state: PracticeState;
+  items: PracticeItem[];
+  language: PracticeState["language"];
+  nextLabel: MessageKey;
+  onAction: (action: PracticeAction) => void;
+}) {
+  const { t } = useApp();
+  const [strokesFor, setStrokesFor] = useState<string | null>(null);
+  const results = items.map((sentence) => ({ sentence, answer: answerFor(state, sentence.id) }));
+  const correct = results.filter((r) => r.answer?.correct).length;
+  const allCorrect = correct === items.length;
+
+  return (
+    <div role="status" className={`space-y-3 rounded-control border-2 p-4 ${allCorrect ? "border-success" : "border-danger"}`}>
+      <div className="flex items-center gap-3">
+        <div className={allCorrect ? "motion-safe:animate-pop" : "motion-safe:animate-shake"}>
+          <ThemeMascot size={56} className="size-14" />
+        </div>
+        <p className={`text-lg font-bold ${allCorrect ? "text-success" : "text-danger"}`}>
+          {t("practice.paragraphScore", { n: items[0].paragraphNumber ?? 1, correct, total: items.length })}
+        </p>
+      </div>
+      <ol className="space-y-2">
+        {results.map(({ sentence, answer }, k) => (
+          <li key={sentence.id} className="space-y-2">
+            <p className={`flex items-center gap-1 text-sm font-semibold ${answer?.correct ? "text-success" : "text-danger"}`}>
+              {answer?.correct ? <CheckIcon className="size-4" /> : <CrossIcon className="size-4" />}
+              {t("practice.sentenceN", { n: k + 1 })}
+            </p>
+            {answer?.correct ? (
+              <p className="rounded-control bg-surface-muted p-3 text-xl leading-relaxed text-foreground">{sentence.text}</p>
+            ) : (
+              <MarkedAnswer item={sentence} typed={answer?.answer ?? ""} language={language} strokes={strokesFor === sentence.id} />
+            )}
+            {language === "zh" && !answer?.correct && (
+              <Button
+                variant="ghost"
+                className="min-h-10 px-3"
+                aria-expanded={strokesFor === sentence.id}
+                onClick={() => setStrokesFor((cur) => (cur === sentence.id ? null : sentence.id))}
+              >
+                {t(strokesFor === sentence.id ? "practice.hideStrokes" : "practice.strokes")}
+              </Button>
+            )}
+          </li>
+        ))}
+      </ol>
+      <Button autoFocus className="w-full text-base" onClick={() => onAction({ type: "next" })}>
+        {t(nextLabel)}
       </Button>
     </div>
   );
