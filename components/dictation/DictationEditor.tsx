@@ -17,6 +17,7 @@ import {
   type DictationList,
   type DictationListType,
 } from "@/types";
+import { PhotoTextButton } from "./PhotoTextButton";
 import { dictationRoutes } from "./routes";
 
 interface Props {
@@ -166,9 +167,20 @@ export function DictationEditor({ studentId, language, list }: Props) {
           </div>
 
           <div>
-            <label htmlFor="list-items" className="mb-1 block text-sm font-medium text-foreground">
-              {t(type === "mixed" ? "dictation.wordsOptionalLabel" : "dictation.itemsLabel")}
-            </label>
+            <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
+              <label htmlFor="list-items" className="block text-sm font-medium text-foreground">
+                {t(type === "mixed" ? "dictation.wordsOptionalLabel" : "dictation.itemsLabel")}
+              </label>
+              <PhotoTextButton
+                language={language}
+                target="words"
+                onText={(text) => {
+                  setItemsText((prev) => (prev.trim() ? `${prev.trimEnd()}\n${text}` : text));
+                  clearError();
+                  return t("dictation.photoDoneWords", { count: text.split("\n").length });
+                }}
+              />
+            </div>
             <textarea
               id="list-items"
               value={itemsText}
@@ -194,9 +206,22 @@ export function DictationEditor({ studentId, language, list }: Props) {
           <Card className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-semibold text-foreground">{t("dictation.paragraphsLabel")}</h2>
-              <Button variant="secondary" onClick={() => setPasteOpen((open) => !open)}>
-                {t("dictation.pastePassage")}
-              </Button>
+              <div className="flex flex-wrap items-start gap-2">
+                <PhotoTextButton
+                  language={language}
+                  target="passage"
+                  onText={(text) => {
+                    // Into the paste box: the parent checks it, then "split automatically" as usual.
+                    setPasteText((prev) => (prev.trim() ? `${prev.trimEnd()}\n\n${text}` : text));
+                    setPasteOpen(true);
+                    clearError();
+                    return t("dictation.photoDonePassage");
+                  }}
+                />
+                <Button variant="secondary" onClick={() => setPasteOpen((open) => !open)}>
+                  {t("dictation.pastePassage")}
+                </Button>
+              </div>
             </div>
             <p className="text-xs text-muted">{t(`dictation.paragraphHelp.${language}`)}</p>
 

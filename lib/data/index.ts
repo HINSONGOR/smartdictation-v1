@@ -9,7 +9,7 @@
 import { createDefaultStore } from "./local/keyValueStore";
 import { createLocalRepositories } from "./local/localRepositories";
 import type { Repositories } from "./repositories";
-import type { CloudStore } from "./cloud";
+import type { CloudStore, OcrEngine } from "./cloud";
 import { SupabaseCloudStore } from "./supabase/SupabaseCloudStore";
 
 export type DataSource = "local";
@@ -29,6 +29,7 @@ export type * from "./repositories";
 export * from "./cloud";
 
 /** Cloud store for sync (V1: Supabase). Only the composition root calls this. */
-export function createCloudStore(url: string, publishableKey: string): CloudStore {
+/** One Supabase client serves both sync and photo OCR (OCR uses the same login). */
+export function createCloudStore(url: string, publishableKey: string): CloudStore & OcrEngine {
   return new SupabaseCloudStore(url, publishableKey);
 }

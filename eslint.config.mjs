@@ -23,7 +23,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "public/sw.js", "scripts/sw.template.js"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "public/sw.js", "scripts/sw.template.js", "supabase/functions/**"]),
 ]);
 
 export default eslintConfig;

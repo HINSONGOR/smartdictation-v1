@@ -1,5 +1,15 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
-import { CloudError, type CloudErrorCode, type CloudStore, type CloudUser, type OutgoingRecord, type RemoteRecord, type SignUpResult } from "../cloud";
+import {
+  CloudError,
+  type CloudErrorCode,
+  type CloudStore,
+  type CloudUser,
+  type OcrEngine,
+  type OcrRequest,
+  type OutgoingRecord,
+  type RemoteRecord,
+  type SignUpResult,
+} from "../cloud";
 
 const TABLE = "sync_records";
 const PAGE = 1000;
@@ -49,7 +59,7 @@ function toCloudError(error: unknown): CloudError {
 }
 
 /** Supabase implementation: email + password auth, one `sync_records` table protected by RLS. */
-export class SupabaseCloudStore implements CloudStore {
+export class SupabaseCloudStore implements CloudStore, OcrEngine {
   private readonly client: SupabaseClient;
 
   constructor(url: string, publishableKey: string) {
@@ -110,6 +120,24 @@ export class SupabaseCloudStore implements CloudStore {
       if (page.length < PAGE) return rows;
       after = page[page.length - 1].updatedAt;
     }
+  }
+
+  async recognize(request: OcrRequest): Promise<string> {
+    const { data, error } = await this.client.functions.invoke<{ text: string }>("ocr", { body: request });
+    if (error) {
+      // FunctionsHttpError carries the function's JSON reply ({ error: code }).
+      const reply = await (error as { context?: Response }).context?.json?.().catch(() => null);
+      const codes: Record<string, CloudErrorCode> = {
+        auth: "cloud.signInRequired",
+        notSetUp: "cloud.ocrNotSetUp",
+        ocrBusy: "cloud.ocrBusy",
+      };
+      if (reply?.error) throw new CloudError(codes[reply.error] ?? "cloud.ocrFailed", error.message);
+      // Function not deployed yet → 404 without our JSON.
+      if ((error as { context?: Response }).context?.status === 404) throw new CloudError("cloud.ocrNotSetUp", error.message);
+      throw toCloudError(error);
+    }
+    return data?.text ?? "";
   }
 
   async push(userId: string, records: OutgoingRecord[]): Promise<RemoteRecord[]> {

@@ -10,6 +10,7 @@ import { createCloudStore, createRepositories } from "@/lib/data";
 import { DictationService } from "@/lib/dictation/DictationService";
 import { PracticeService } from "@/lib/dictation/PracticeService";
 import { MistakeService } from "@/lib/mistakes/MistakeService";
+import { OcrService } from "@/lib/ocr/OcrService";
 import { SettingsService } from "@/lib/settings/SettingsService";
 import { StatsService } from "@/lib/stats/StatsService";
 import { StudentService } from "@/lib/student/StudentService";
@@ -24,6 +25,7 @@ export interface AppServices {
   stats: StatsService;
   backup: BackupService;
   cloud: CloudSyncService;
+  ocr: OcrService;
   tts: TTSService;
 }
 
@@ -33,6 +35,8 @@ let instance: AppServices | null = null;
 export function getServices(): AppServices {
   if (!instance) {
     const repos = createRepositories(APP_CONFIG.dataSource);
+    const cloudStore = createCloudStore(CLOUD_CONFIG.url, CLOUD_CONFIG.publishableKey);
+    const cloud = new CloudSyncService(cloudStore, repos.backup, repos.owner, repos.syncState, repos.changes);
     instance = {
       students: new StudentService(repos.students, repos.owner, repos.settings, {
         lists: repos.content,
@@ -45,13 +49,8 @@ export function getServices(): AppServices {
       practice: new PracticeService(repos.practice, repos.mistakes),
       stats: new StatsService(repos.practice, repos.mistakes, repos.content),
       backup: new BackupService(repos.backup, repos.settings),
-      cloud: new CloudSyncService(
-        createCloudStore(CLOUD_CONFIG.url, CLOUD_CONFIG.publishableKey),
-        repos.backup,
-        repos.owner,
-        repos.syncState,
-        repos.changes,
-      ),
+      cloud,
+      ocr: new OcrService(cloudStore, cloud),
       tts: new TTSService(createTTSProvider(APP_CONFIG.ttsProvider)),
     };
   }

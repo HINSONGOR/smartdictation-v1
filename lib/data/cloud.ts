@@ -35,6 +35,10 @@ export type CloudErrorCode =
   | "cloud.weakPassword"
   | "cloud.invalidEmail"
   | "cloud.invalidUsername"
+  | "cloud.signInRequired"
+  | "cloud.ocrNotSetUp"
+  | "cloud.ocrBusy"
+  | "cloud.ocrFailed"
   | "cloud.network"
   | "cloud.notSetUp"
   | "cloud.unknown";
@@ -55,6 +59,22 @@ export interface CloudStore {
   pullSince(userId: string, cursor: string | null): Promise<RemoteRecord[]>;
   /** Upsert records; returns them as stored (with server updatedAt). */
   push(userId: string, records: OutgoingRecord[]): Promise<RemoteRecord[]>;
+}
+
+/** What a photo is expected to contain. */
+export type OcrTarget = "words" | "passage";
+
+export interface OcrRequest {
+  /** Base64 image data (no data: prefix). */
+  image: string;
+  mimeType: string;
+  language: "zh" | "en";
+  target: OcrTarget;
+}
+
+/** Photo → text, run in the cloud for the logged-in family account. */
+export interface OcrEngine {
+  recognize(request: OcrRequest): Promise<string>;
 }
 
 /** Thrown by CloudStore implementations with a code the UI can translate. */
