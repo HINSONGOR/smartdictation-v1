@@ -73,25 +73,33 @@ Deno.serve(async (req) => {
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
-  const request = JSON.stringify({
-    contents: [{ parts: [{ text: prompt(language!, target!) }, { inline_data: { mime_type: mimeType, data: image } }] }],
-    generationConfig: { temperature: 0 },
-  });
+  const contents = [{ parts: [{ text: prompt(language!, target!) }, { inline_data: { mime_type: mimeType, data: image } }] }];
+  // Reading text needs little "thinking"; low thinking answers much faster.
+  const fast = JSON.stringify({ contents, generationConfig: { temperature: 0, thinkingConfig: { thinkingLevel: "low" } } });
+  const plain = JSON.stringify({ contents, generationConfig: { temperature: 0 } });
+
+  const call = (model: string, body: string) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body,
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
+    }).catch(() => null); // network error or too slow
 
   let busy = false;
   for (const model of models.length ? models : DEFAULT_MODELS) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: request,
-      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-    }).catch(() => null); // network error or too slow
+    const started = Date.now();
+    console.log("gemini try", model);
+    let res = await call(model, fast);
+    // This model doesn't accept the thinking setting → ask once more without it.
+    if (res?.status === 400) res = await call(model, plain);
     if (!res?.ok) {
       // Busy / too slow / unavailable / model not offered to this key → try the next model.
       busy ||= !res || res.status === 429 || res.status === 503;
-      console.error("gemini", model, res?.status, res ? await res.text() : "network");
+      console.error("gemini fail", model, res?.status ?? "timeout/network", Date.now() - started, "ms", res ? await res.text() : "");
       continue;
     }
+    console.log("gemini ok", model, Date.now() - started, "ms");
     const data = await res.json();
     const text: string = (data.candidates?.[0]?.content?.parts ?? [])
       .map((p: { text?: string }) => p.text ?? "")
