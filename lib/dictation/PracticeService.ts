@@ -11,6 +11,9 @@ import type {
   PracticeSession,
 } from "@/types";
 
+/** Mistake record id for a list item (deterministic, so devices agree on it). */
+export const mistakeId = (studentId: string, listId: string, itemId: string) => `m:${studentId}:${listId}:${itemId}`;
+
 interface FinishBase {
   mode: PracticeMode;
   answers: PracticeAnswer[];
@@ -54,7 +57,8 @@ export class PracticeService {
       const record = existing.find((m) => m.listId === list.id && m.itemId === answer.itemId);
       if (record || answer.correct) return record ?? null;
       const created: MistakeRecord = {
-        id: createId(),
+        // Same id on every device, so a word missed on two devices before they sync stays one record.
+        id: mistakeId(studentId, list.id, answer.itemId),
         studentId,
         language: list.language,
         listId: list.id,

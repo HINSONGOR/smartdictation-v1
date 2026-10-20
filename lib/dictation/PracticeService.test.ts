@@ -43,6 +43,15 @@ describe("PracticeService", () => {
     expect(await repos.practice.listByStudent("a")).toHaveLength(1);
   });
 
+  it("gives a missed word the same mistake id on every device (no duplicates after cloud sync)", async () => {
+    const other = createLocalRepositories(new MemoryStore());
+    await finish([wrong("i1", "apple")]);
+    await new PracticeService(other.practice, other.mistakes).finish("a", { list: LIST, mode: "paper", answers: [wrong("i1", "apple")], startedAt: START });
+    const [here] = await repos.mistakes.listByStudent("a");
+    const [there] = await other.mistakes.listByStudent("a");
+    expect(here.id).toBe(there.id);
+  });
+
   it("records mistakes with hint, and increases the count on repeats", async () => {
     await finish([wrong("i1", "apple", "aple")]);
     await finish([wrong("i1", "apple", "appel")]);

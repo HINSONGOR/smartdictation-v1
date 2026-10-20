@@ -52,6 +52,8 @@ export class CloudSyncService {
   private applying = false;
   private debounce: ReturnType<typeof setTimeout> | null = null;
   private started = false;
+  /** Bumped on every local change (not counting changes written by sync itself). */
+  private localVersion = 0;
 
   constructor(
     private readonly cloud: CloudStore,
@@ -59,7 +61,12 @@ export class CloudSyncService {
     private readonly owner: OwnerRepository,
     private readonly syncState: SyncStateRepository,
     private readonly changes: ChangeFeed,
-  ) {}
+  ) {
+    // Tracked from the start (not only after start()), so a sync never overwrites a newer local save.
+    changes.subscribe(() => {
+      if (!this.applying) this.localVersion++;
+    });
+  }
 
   // ---- status ------------------------------------------------------------
 
@@ -185,9 +192,17 @@ export class CloudSyncService {
       const state: SyncState =
         saved && saved.userId === user.id ? saved : { userId: user.id, cursor: null, base: {}, lastSyncedAt: null };
 
+      const version = this.localVersion;
       const [snapshot, owner] = await Promise.all([this.backup.readAll(), this.owner.get()]);
       const local = toLocalRecords(snapshot, owner);
       const remote = await this.cloud.pullSince(user.id, state.cursor);
+      if (this.localVersion !== version) {
+        // Something was saved here while downloading: applying the plan would overwrite it with the
+        // older snapshot. Drop this run (nothing written) and sync again with the latest local data.
+        this.rerun = true;
+        this.patchSignedIn({ syncing: false });
+        return null;
+      }
       const now = nowIso();
       const plan = planSync(local, state.base, remote, now, isDefaultOwner);
 

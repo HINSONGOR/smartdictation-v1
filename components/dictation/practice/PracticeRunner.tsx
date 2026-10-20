@@ -486,6 +486,13 @@ function TypingParagraph({
                 ref={k === current ? currentRef : undefined}
                 value={drafts[sentence.id] ?? ""}
                 onChange={(e) => setDrafts((d) => ({ ...d, [sentence.id]: e.target.value }))}
+                onKeyDown={(e) => {
+                  // Enter while fixing an earlier sentence: back to the current box (don't move on / check yet).
+                  if (e.key === "Enter" && k !== current && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    currentRef.current?.focus();
+                  }
+                }}
                 placeholder={k === current ? t("practice.answerPlaceholder") : undefined}
                 lang={language === "zh" ? "zh-HK" : "en"}
                 // Autocorrect / auto-capitalise would change the answer (case and spelling are checked).

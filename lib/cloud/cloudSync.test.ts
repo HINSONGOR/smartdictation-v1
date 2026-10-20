@@ -25,6 +25,8 @@ class FakeCloud {
   rows = new Map<string, RemoteRecord & { familyId: string }>();
   private clock = 0;
   offline = false;
+  /** Runs while a pull is "on the network" (e.g. the user saves something meanwhile). */
+  duringPull: (() => Promise<void>) | null = null;
   accounts = new Map<string, { id: string; password: string }>();
 
   store(): CloudStore & { signedIn: CloudUser | null } {
@@ -52,7 +54,11 @@ class FakeCloud {
       },
       async pullSince(userId: string, cursor: string | null) {
         if (cloud.offline) throw new CloudError("cloud.network");
-        return [...cloud.rows.values()]
+        const rows = [...cloud.rows.values()];
+        const during = cloud.duringPull;
+        cloud.duringPull = null;
+        await during?.();
+        return rows
           .filter((r) => r.familyId === userId && (!cursor || r.updatedAt > cursor))
           .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
       },
@@ -210,4 +216,24 @@ describe("CloudSyncService (two devices)", () => {
     await new Promise((r) => setTimeout(r, 3300));
     expect([...cloud.rows.values()].some((r) => r.collection === "students" && r.id === "a")).toBe(true);
   }, 10_000);
+
+  it("keeps a local save made while a sync is downloading", async () => {
+    const ipad = device(cloud);
+    await ipad.repos.students.save(student("a", "小明"));
+    await ipad.sync.signUp("Mum-Family", "pw123456");
+    const phone = device(cloud);
+    await phone.sync.signIn("Mum-Family", "pw123456");
+
+    // iPad adds a list; while the phone is downloading it, the phone saves its own new list.
+    await ipad.repos.content.save(list("from-ipad", "a", "iPad 範圍"));
+    await ipad.sync.syncNow();
+    cloud.duringPull = () => phone.repos.content.save(list("from-phone", "a", "Phone 範圍"));
+    await phone.sync.syncNow();
+    await phone.sync.syncNow(); // the follow-up run (also triggered automatically)
+
+    const titles = async (repos: Repositories) => (await repos.content.listByStudent("a", "zh")).map((l) => l.title).sort();
+    expect(await titles(phone.repos)).toEqual(["Phone 範圍", "iPad 範圍"]);
+    await ipad.sync.syncNow();
+    expect(await titles(ipad.repos)).toEqual(["Phone 範圍", "iPad 範圍"]);
+  });
 });
