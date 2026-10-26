@@ -1,5 +1,8 @@
-import { ComingSoon } from "@/components/dashboard/ComingSoon";
+"use client";
+
+import { PromptLibrary } from "@/components/prompts/PromptLibrary";
+import { RequireStudent } from "@/components/student/RequireStudent";
 
 export default function PromptsPage() {
-  return <ComingSoon titleKey="nav.prompts" descKey="comingSoon.prompts" />;
+  return <RequireStudent>{(student) => <PromptLibrary student={student} />}</RequireStudent>;
 }

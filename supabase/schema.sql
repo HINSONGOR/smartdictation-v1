@@ -4,7 +4,7 @@
 
 create table if not exists public.sync_records (
   family_id   uuid        not null default auth.uid() references auth.users (id) on delete cascade,
-  collection  text        not null check (collection in ('students', 'lists', 'mistakes', 'sessions', 'owner', 'tasks', 'planner')),
+  collection  text        not null check (collection in ('students', 'lists', 'mistakes', 'sessions', 'owner', 'tasks', 'planner', 'prompts')),
   id          text        not null,
   data        jsonb,                                  -- null when deleted
   deleted     boolean     not null default false,

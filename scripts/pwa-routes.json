@@ -1,6 +1,7 @@
 [
   "/dashboard",
   "/prompts",
+  "/prompts/edit",
   "/scan",
   "/knowledge",
   "/planner/task",

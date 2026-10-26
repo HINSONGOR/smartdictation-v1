@@ -19,6 +19,7 @@ export interface StudentDataStores {
   mistakes: StudentScopedStore;
   sessions: StudentScopedStore;
   tasks: StudentScopedStore;
+  prompts: StudentScopedStore;
 }
 
 export type StudentDataSummary = Record<keyof StudentDataStores, number>;
@@ -142,13 +143,14 @@ export class StudentService {
 
   /** How much learning data a student has (shown before deleting). */
   async dataSummary(studentId: string): Promise<StudentDataSummary> {
-    const [lists, mistakes, sessions, tasks] = await Promise.all([
+    const [lists, mistakes, sessions, tasks, prompts] = await Promise.all([
       this.studentData.lists.countForStudent(studentId),
       this.studentData.mistakes.countForStudent(studentId),
       this.studentData.sessions.countForStudent(studentId),
       this.studentData.tasks.countForStudent(studentId),
+      this.studentData.prompts.countForStudent(studentId),
     ]);
-    return { lists, mistakes, sessions, tasks };
+    return { lists, mistakes, sessions, tasks, prompts };
   }
 
   /** Permanently delete a student and all of their learning data. Other students are untouched. */

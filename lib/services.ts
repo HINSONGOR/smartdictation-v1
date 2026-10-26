@@ -12,6 +12,7 @@ import { PracticeService } from "@/lib/dictation/PracticeService";
 import { MistakeService } from "@/lib/mistakes/MistakeService";
 import { OcrService } from "@/lib/ocr/OcrService";
 import { PlannerService } from "@/lib/planner/PlannerService";
+import { PromptService } from "@/lib/prompts/PromptService";
 import { SettingsService } from "@/lib/settings/SettingsService";
 import { StatsService } from "@/lib/stats/StatsService";
 import { StudentService } from "@/lib/student/StudentService";
@@ -27,6 +28,7 @@ export interface AppServices {
   backup: BackupService;
   cloud: CloudSyncService;
   planner: PlannerService;
+  prompts: PromptService;
   ocr: OcrService;
   tts: TTSService;
 }
@@ -45,6 +47,7 @@ export function getServices(): AppServices {
         mistakes: repos.mistakes,
         sessions: repos.practice,
         tasks: repos.tasks,
+        prompts: repos.prompts,
       }),
       settings: new SettingsService(repos.settings),
       dictation: new DictationService(repos.content),
@@ -54,6 +57,7 @@ export function getServices(): AppServices {
       backup: new BackupService(repos.backup, repos.settings),
       cloud,
       planner: new PlannerService(repos.tasks, repos.planner, repos.practice, repos.content),
+      prompts: new PromptService(repos.prompts),
       ocr: new OcrService(cloudStore, cloud),
       tts: new TTSService(createTTSProvider(APP_CONFIG.ttsProvider)),
     };

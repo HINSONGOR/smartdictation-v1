@@ -16,6 +16,7 @@ export function countsOf(snapshot: LearningDataSnapshot): BackupCounts {
     sessions: snapshot.sessions.length,
     tasks: snapshot.tasks.length,
     planner: snapshot.planner.length,
+    prompts: snapshot.prompts.length,
   };
 }
 
@@ -83,10 +84,17 @@ const VALID = {
     typeof r.done === "boolean" &&
     isStr(r.createdAt),
   planner: (r: Rec) => isNonEmpty(r.id) && Array.isArray(r.categories) && Array.isArray(r.subjects),
+  prompts: (r: Rec) =>
+    isNonEmpty(r.id) &&
+    (r.ownerStudentId === null || isNonEmpty(r.ownerStudentId)) &&
+    isStr(r.title) &&
+    isStr(r.content) &&
+    Array.isArray(r.versions) &&
+    isStr(r.createdAt),
 } satisfies Record<keyof LearningDataSnapshot, (r: Rec) => boolean>;
 
 /** Collections added after format 1: missing in older files means "none". */
-const OPTIONAL_KEYS = new Set<keyof LearningDataSnapshot>(["tasks", "planner"]);
+const OPTIONAL_KEYS = new Set<keyof LearningDataSnapshot>(["tasks", "planner", "prompts"]);
 
 /** Keep the first record per id. */
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
@@ -140,6 +148,8 @@ export function parseBackup(text: string): ParsedBackup {
     sessions: owned(data.sessions as LearningDataSnapshot["sessions"]),
     tasks: owned(data.tasks as LearningDataSnapshot["tasks"]),
     planner: uniqueById(data.planner as LearningDataSnapshot["planner"]).slice(0, 1),
+    // Family-shared prompts always; a student's own only with that student.
+    prompts: uniqueById(data.prompts as LearningDataSnapshot["prompts"]).filter((p) => p.ownerStudentId === null || ids.has(p.ownerStudentId)),
   };
   return {
     file: { app: BACKUP_APP_ID, formatVersion: raw.formatVersion, exportedAt: raw.exportedAt, data: snapshot },

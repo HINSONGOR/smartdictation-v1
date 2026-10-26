@@ -20,6 +20,7 @@ import type {
   OwnerProfile,
   PlannerSettings,
   PracticeSession,
+  PromptEntry,
   StudentProfile,
   StudentTask,
 } from "@/types";
@@ -73,6 +74,14 @@ export interface TaskRepository extends StudentScopedStore {
   removeForStudent(studentId: string, taskId: string): Promise<void>;
 }
 
+/** AI prompt library. Students see family-shared prompts plus their own. */
+export interface PromptRepository extends StudentScopedStore {
+  listVisible(studentId: string): Promise<PromptEntry[]>;
+  get(id: string): Promise<PromptEntry | null>;
+  save(prompt: PromptEntry): Promise<void>;
+  remove(id: string): Promise<void>;
+}
+
 /** Family-wide planner options (custom categories / subjects). */
 export interface PlannerSettingsRepository {
   get(): Promise<PlannerSettings | null>;
@@ -122,6 +131,7 @@ export interface Repositories {
   mistakes: MistakeRepository;
   practice: PracticeRepository;
   tasks: TaskRepository;
+  prompts: PromptRepository;
   planner: PlannerSettingsRepository;
   settings: SettingsRepository;
   backup: BackupStore;

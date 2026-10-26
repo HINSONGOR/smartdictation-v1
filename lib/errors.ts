@@ -36,7 +36,12 @@ export type ServiceErrorCode =
   | "planner.nameRequired"
   | "planner.nameTooLong"
   | "planner.nameTaken"
-  | "planner.limitReached";
+  | "planner.limitReached"
+  | "prompt.titleRequired"
+  | "prompt.titleTooLong"
+  | "prompt.contentRequired"
+  | "prompt.contentTooLong"
+  | "prompt.notFound";
 
 export class ServiceError extends Error {
   constructor(readonly code: ServiceErrorCode) {

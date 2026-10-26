@@ -7,6 +7,7 @@ import type {
   MistakeRecord,
   OwnerProfile,
   PlannerSettings,
+  PromptEntry,
   PracticeSession,
   StudentProfile,
   StudentScoped,
@@ -19,6 +20,7 @@ import type {
   MistakeRepository,
   OwnerRepository,
   PlannerSettingsRepository,
+  PromptRepository,
   PracticeRepository,
   TaskRepository,
   Repositories,
@@ -45,6 +47,7 @@ const KEYS = {
   practice: "practice-sessions",
   tasks: "tasks",
   planner: "planner",
+  prompts: "prompts",
   settings: "settings",
   syncState: "sync-state",
 } as const;
@@ -188,6 +191,39 @@ class LocalTaskRepository extends LocalStudentScopedRepository<StudentTask> impl
   }
 }
 
+class LocalPromptRepository implements PromptRepository {
+  private readonly collection: LocalCollection<PromptEntry>;
+
+  constructor(store: KeyValueStore) {
+    this.collection = new LocalCollection(store, KEYS.prompts, []);
+  }
+
+  async listVisible(studentId: string) {
+    return this.collection.filter((p) => p.ownerStudentId === null || p.ownerStudentId === studentId);
+  }
+
+  async get(id: string) {
+    return this.collection.find((p) => p.id === id);
+  }
+
+  async save(prompt: PromptEntry) {
+    this.collection.upsert(prompt);
+  }
+
+  async remove(id: string) {
+    this.collection.removeWhere((p) => p.id === id);
+  }
+
+  /** Only the student's own prompts (family-shared ones stay when a student is deleted). */
+  async countForStudent(studentId: string) {
+    return this.collection.filter((p) => p.ownerStudentId === studentId).length;
+  }
+
+  async removeAllForStudent(studentId: string) {
+    this.collection.removeWhere((p) => p.ownerStudentId === studentId);
+  }
+}
+
 class LocalPlannerSettingsRepository implements PlannerSettingsRepository {
   constructor(private readonly store: KeyValueStore) {}
 
@@ -212,6 +248,7 @@ class LocalBackupStore implements BackupStore {
       sessions: new LocalCollection(this.store, KEYS.practice, seedPracticeSessions as PracticeSession[]).all(),
       tasks: new LocalCollection<StudentTask>(this.store, KEYS.tasks, []).all(),
       planner: new LocalCollection<PlannerSettings>(this.store, KEYS.planner, []).all(),
+      prompts: new LocalCollection<PromptEntry>(this.store, KEYS.prompts, []).all(),
     };
   }
 
@@ -222,6 +259,7 @@ class LocalBackupStore implements BackupStore {
     this.store.write(KEYS.practice, snapshot.sessions);
     this.store.write(KEYS.tasks, snapshot.tasks);
     this.store.write(KEYS.planner, snapshot.planner);
+    this.store.write(KEYS.prompts, snapshot.prompts);
   }
 }
 
@@ -250,6 +288,7 @@ const SYNCED_KEYS = new Set<string>([
   KEYS.practice,
   KEYS.tasks,
   KEYS.planner,
+  KEYS.prompts,
 ]);
 
 function createChangeFeed(store: KeyValueStore): ChangeFeed {
@@ -279,6 +318,7 @@ export function createLocalRepositories(store: KeyValueStore): Repositories {
     practice: new LocalPracticeRepository(store),
     tasks: new LocalTaskRepository(store),
     planner: new LocalPlannerSettingsRepository(store),
+    prompts: new LocalPromptRepository(store),
     backup: new LocalBackupStore(store),
     syncState: new LocalSyncStateRepository(store),
     changes: createChangeFeed(store),

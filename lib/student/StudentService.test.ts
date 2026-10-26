@@ -27,6 +27,7 @@ describe("StudentService", () => {
       mistakes: repos.mistakes,
       sessions: repos.practice,
       tasks: repos.tasks,
+      prompts: repos.prompts,
     });
   });
 
@@ -111,12 +112,12 @@ describe("StudentService", () => {
       await addLearningData(a.id);
       await addLearningData(b.id);
 
-      expect(await service.dataSummary(a.id)).toEqual({ lists: 1, mistakes: 1, sessions: 1, tasks: 0 });
+      expect(await service.dataSummary(a.id)).toEqual({ lists: 1, mistakes: 1, sessions: 1, tasks: 0, prompts: 0 });
       await service.remove(a.id);
 
       expect((await service.listAllForOwner()).map((s) => s.name)).toEqual(["Ben"]);
-      expect(await service.dataSummary(a.id)).toEqual({ lists: 0, mistakes: 0, sessions: 0, tasks: 0 });
-      expect(await service.dataSummary(b.id)).toEqual({ lists: 1, mistakes: 1, sessions: 1, tasks: 0 });
+      expect(await service.dataSummary(a.id)).toEqual({ lists: 0, mistakes: 0, sessions: 0, tasks: 0, prompts: 0 });
+      expect(await service.dataSummary(b.id)).toEqual({ lists: 1, mistakes: 1, sessions: 1, tasks: 0, prompts: 0 });
     });
 
     it("signs out the deleted student if they were current", async () => {

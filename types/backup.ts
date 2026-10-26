@@ -3,6 +3,7 @@ import type { DictationList } from "./dictation";
 import type { MistakeRecord } from "./mistake";
 import type { PlannerSettings, StudentTask } from "./planner";
 import type { PracticeSession } from "./practice";
+import type { PromptEntry } from "./prompts";
 import type { StudentProfile } from "./student";
 
 /** All learning data on this device (the owner PIN and device settings are not part of it). */
@@ -15,6 +16,8 @@ export interface LearningDataSnapshot {
   tasks: StudentTask[];
   /** Family planner options: 0 or 1 record. */
   planner: PlannerSettings[];
+  /** AI prompt library (family-shared and per student). Missing in older files. */
+  prompts: PromptEntry[];
 }
 
 export const BACKUP_APP_ID = "SmartDictation";

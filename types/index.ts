@@ -6,3 +6,4 @@ export * from "./practice";
 export * from "./backup";
 export * from "./settings";
 export * from "./planner";
+export * from "./prompts";

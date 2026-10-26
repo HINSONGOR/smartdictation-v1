@@ -54,9 +54,21 @@ export function mergeSnapshots(current: LearningDataSnapshot, incoming: Learning
   const tasks = addNew(current.tasks, incoming.tasks);
   // Family planner options: keep this device's; take the backup's only if there are none here.
   const planner = current.planner.length ? current.planner : incoming.planner;
+  const promptIds = new Set(current.prompts.map((p) => p.id));
+  const newPrompts = incoming.prompts.filter(
+    (p) => !promptIds.has(p.id) && (p.ownerStudentId === null || studentIds.has(p.ownerStudentId)),
+  );
 
   return {
-    snapshot: { students, lists: lists.merged, mistakes: mistakes.merged, sessions: sessions.merged, tasks: tasks.merged, planner },
+    snapshot: {
+      students,
+      lists: lists.merged,
+      mistakes: mistakes.merged,
+      sessions: sessions.merged,
+      tasks: tasks.merged,
+      planner,
+      prompts: [...current.prompts, ...newPrompts],
+    },
     added: {
       students: students.length - current.students.length,
       lists: lists.added,
@@ -64,6 +76,7 @@ export function mergeSnapshots(current: LearningDataSnapshot, incoming: Learning
       sessions: sessions.added,
       tasks: tasks.added,
       planner: planner.length - current.planner.length,
+      prompts: newPrompts.length,
     },
     renamed,
   };
