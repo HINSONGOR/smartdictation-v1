@@ -33,6 +33,8 @@ export type ServiceErrorCode =
   | "task.minutesInvalid"
   | "task.notesTooLong"
   | "task.notFound"
+  | "task.weekdaysRequired"
+  | "task.endBeforeStart"
   | "planner.nameRequired"
   | "planner.nameTooLong"
   | "planner.nameTaken"

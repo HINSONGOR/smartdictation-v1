@@ -297,7 +297,7 @@ function WeekStrip({ tasks, today }: { tasks: StudentTask[]; today: DateKey }) {
               {new Intl.DateTimeFormat(settings.locale, { weekday: "narrow" }).format(parseDateKey(day))}
             </span>
             <span aria-hidden="true" className={`text-lg leading-none ${status === "empty" || status === "future" ? "text-muted" : ""}`}>
-              {STATUS_MARK[status]}
+              {day === today && status === "none" ? "⏳" : STATUS_MARK[status]}
             </span>
           </li>
         );

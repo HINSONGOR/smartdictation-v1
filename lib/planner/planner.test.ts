@@ -5,9 +5,10 @@ import { createLocalRepositories } from "@/lib/data/local/localRepositories";
 import { ServiceError } from "@/lib/errors";
 import type { PracticeSession, StudentTask } from "@/types";
 import { PlannerService } from "./PlannerService";
-import { addDays, autoDoneAt, categoriesOf, checkInStreak, dayStatus, daysBetween, examsView, isDateKey, lastDays, monthGrid, schoolYearOf, todayView, weekOf } from "./plannerRules";
+import { addDays, autoDoneAt, categoriesOf, checkInStreak, occurrenceDays, occurrenceId, repeatsOn, dayStatus, daysBetween, examsView, isDateKey, lastDays, monthGrid, schoolYearOf, todayView, weekOf } from "./plannerRules";
 
 const T = "2026-10-26T00:00:00.000Z";
+const codeOf = (p: Promise<unknown>) => p.then(() => null, (e: unknown) => (e instanceof ServiceError ? e.code : String(e)));
 const task = (patch: Partial<StudentTask>): StudentTask => ({
   id: "t", studentId: "a", title: "T", categoryId: "homework", date: "2026-10-26", done: false,
   schoolYear: "2026-27", createdAt: T, updatedAt: T, ...patch,
@@ -106,7 +107,6 @@ describe("PlannerService", () => {
     planner = new PlannerService(repos.tasks, repos.planner, repos.practice, repos.content);
   });
 
-  const codeOf = (p: Promise<unknown>) => p.then(() => null, (e: unknown) => (e instanceof ServiceError ? e.code : String(e)));
 
   it("creates, edits, completes and deletes tasks per student", async () => {
     const created = await planner.create("a", { title: " 數學作業 P.12 ", categoryId: "homework", subjectId: "math", date: "2026-10-27", minutes: 20 });
@@ -171,5 +171,107 @@ describe("PlannerService", () => {
     const { categories: after } = await planner.options();
     expect(after).toHaveLength(categoriesOf(null).length);
     expect((await planner.getTask("a", t.id))?.categoryId).toBe(piano.id); // task kept (shows as "other")
+  });
+});
+
+describe("repeating tasks", () => {
+  const MON = "2026-10-26";
+  let repos: Repositories;
+  let planner: PlannerService;
+  const base = { title: "Homework", categoryId: "homework", date: MON, minutes: 60 };
+  const dates = (tasks: StudentTask[]) => tasks.map((t) => t.date).sort();
+
+  beforeEach(() => {
+    repos = createLocalRepositories(new MemoryStore());
+    planner = new PlannerService(repos.tasks, repos.planner, repos.practice, repos.content);
+  });
+
+  it("knows which days each repeat kind falls on", () => {
+    const rule = { kind: "weekly" as const, weekdays: [2, 4], start: MON };
+    expect(repeatsOn(rule, "2026-10-27")).toBe(true); // Tue
+    expect(repeatsOn(rule, "2026-10-28")).toBe(false);
+    expect(repeatsOn({ kind: "schoolDays", start: MON }, "2026-11-01")).toBe(false); // Sun
+    expect(repeatsOn({ kind: "daily", start: MON, end: "2026-10-30" }, "2026-10-31")).toBe(false);
+    expect(repeatsOn({ kind: "daily", start: MON, pausedUntil: "2026-10-28" }, "2026-10-28")).toBe(false);
+    expect(repeatsOn({ kind: "daily", start: MON, skip: ["2026-10-29"] }, "2026-10-29")).toBe(false);
+    expect(occurrenceDays({ kind: "schoolDays", start: MON }, "2026-10-01", "2026-11-08")).toHaveLength(10);
+  });
+
+  it("creates each school day's task for two weeks, hides the template, never duplicates", async () => {
+    const template = await planner.create("a", { ...base, repeat: { kind: "schoolDays" } });
+    const first = await planner.listTasks("a", MON);
+    expect(first).toHaveLength(10);
+    expect(first.every((t) => t.routineId === template.id && t.minutes === 60 && !t.repeat)).toBe(true);
+    expect(first.map((t) => t.id)).toContain(occurrenceId(template.id, MON));
+    expect(await planner.listTasks("a", MON)).toHaveLength(10); // no duplicates
+    expect(await planner.listTasks("a", "2026-10-28")).toHaveLength(12); // the window moves on
+    expect(await codeOf(planner.create("a", { ...base, repeat: { kind: "weekly", weekdays: [] } }))).toBe("task.weekdaysRequired");
+  });
+
+  it("skips one day, or stops from a day on, when a day's task is deleted", async () => {
+    await planner.create("a", { ...base, repeat: { kind: "daily" } });
+    let tasks = await planner.listTasks("a", MON);
+    await planner.remove("a", tasks.find((t) => t.date === "2026-10-27")!.id, "one");
+    tasks = await planner.listTasks("a", MON);
+    expect(dates(tasks)).not.toContain("2026-10-27");
+    expect(tasks).toHaveLength(13);
+
+    await planner.remove("a", tasks.find((t) => t.date === "2026-10-30")!.id, "future");
+    expect(dates(await planner.listTasks("a", MON))).toEqual(["2026-10-26", "2026-10-28", "2026-10-29"]);
+  });
+
+  it("changes this day and later (days already done keep their state)", async () => {
+    await planner.create("a", { ...base, repeat: { kind: "schoolDays" } });
+    let tasks = await planner.listTasks("a", MON);
+    await planner.setDone("a", tasks.find((t) => t.date === MON)!.id, true);
+    const tue = tasks.find((t) => t.date === "2026-10-27")!;
+    await planner.update("a", tue.id, { ...base, title: "Homework + reading", date: tue.date, repeat: { kind: "schoolDays" } }, "future");
+    tasks = await planner.listTasks("a", MON);
+    expect(tasks.find((t) => t.date === MON)).toMatchObject({ title: "Homework", done: true });
+    expect(tasks.filter((t) => t.date >= "2026-10-27").every((t) => t.title === "Homework + reading")).toBe(true);
+    expect(tasks).toHaveLength(10);
+
+    // From a later day: the days before it keep their old details; a day already ticked moves along.
+    const thu = tasks.find((t) => t.date === "2026-10-29")!;
+    await planner.setDone("a", thu.id, true);
+    const fri = tasks.find((t) => t.date === "2026-10-30")!;
+    await planner.update("a", fri.id, { ...base, title: "Homework (short)", minutes: 30, date: fri.date, repeat: { kind: "schoolDays" } }, "future");
+    await planner.update("a", tasks.find((t) => t.date === "2026-10-28")!.id, { ...base, title: "Wed", date: "2026-10-28", repeat: { kind: "schoolDays" } }, "future");
+    tasks = await planner.listTasks("a", MON);
+    const titleOn = (d: string) => tasks.find((t) => t.date === d)?.title;
+    expect(["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-11-06"].map(titleOn)).toEqual([
+      "Homework", "Homework + reading", "Wed", "Wed", "Homework (short)", "Homework (short)",
+    ]);
+    expect(tasks.find((t) => t.date === "2026-10-29")?.done).toBe(true); // tick kept
+    expect(tasks).toHaveLength(10); // no duplicates
+
+    // Only one day.
+    const wed = tasks.find((t) => t.date === "2026-10-28")!;
+    await planner.update("a", wed.id, { ...base, title: "No reading today", date: wed.date }, "one");
+    tasks = await planner.listTasks("a", MON);
+    expect(tasks.filter((t) => t.title === "No reading today").map((t) => t.date)).toEqual(["2026-10-28"]);
+  });
+
+  it("pauses for holidays and carries on afterwards", async () => {
+    const template = await planner.create("a", { ...base, repeat: { kind: "daily" } });
+    await planner.listTasks("a", MON);
+    await planner.pauseRoutine("a", template.id, "2026-10-31", MON);
+    expect(dates(await planner.listTasks("a", MON))[0]).toBe("2026-11-01");
+    await planner.pauseRoutine("a", template.id, null, MON);
+    expect(await planner.listTasks("a", MON)).toHaveLength(14);
+  });
+
+  it("turns a normal task into a repeating one, and back", async () => {
+    const once = await planner.create("a", base);
+    const template = await planner.update("a", once.id, { ...base, repeat: { kind: "weekly", weekdays: [1] } });
+    expect(template.repeat).toMatchObject({ kind: "weekly", weekdays: [1], start: MON });
+    let tasks = await planner.listTasks("a", MON);
+    expect(dates(tasks)).toEqual(["2026-10-26", "2026-11-02"]);
+
+    await planner.update("a", tasks.find((t) => t.date === "2026-11-02")!.id, { ...base, date: "2026-11-02" }, "future");
+    tasks = await planner.listTasks("a", MON);
+    expect(dates(tasks)).toEqual(["2026-10-26", "2026-11-02"]);
+    expect(tasks.find((t) => t.date === "2026-11-02")?.routineId).toBeUndefined(); // now a normal task
+    expect(await planner.listTasks("a", "2026-11-09")).toHaveLength(2); // repeat ended
   });
 });

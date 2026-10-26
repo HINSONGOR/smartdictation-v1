@@ -52,6 +52,28 @@ export type TaskLink =
   | { kind: "dictationList"; listId: string; language: DictationLanguage }
   | { kind: "mistakeReview"; language: DictationLanguage };
 
+/** 每日 / 返學日（一至五）/ 每星期揀星期幾. */
+export type RepeatKind = "daily" | "schoolDays" | "weekly";
+
+export interface RepeatRule {
+  kind: RepeatKind;
+  /** weekly: days of the week, 0 = Sunday … 6 = Saturday. */
+  weekdays?: number[];
+  /** First day it repeats on. */
+  start: DateKey;
+  /** Last day (optional). */
+  end?: DateKey;
+  /** Holidays: no tasks up to and including this day. */
+  pausedUntil?: DateKey;
+  /** Single days removed ("只刪呢日"). */
+  skip?: DateKey[];
+}
+
+/** Repeating tasks are shown this many days ahead (today included) … */
+export const REPEAT_HORIZON_DAYS = 14;
+/** … and this many days back (missed days count in check-in). */
+export const REPEAT_LOOKBACK_DAYS = 60;
+
 export interface StudentTask extends Entity, StudentScoped {
   title: string;
   categoryId: string;
@@ -66,6 +88,10 @@ export interface StudentTask extends Entity, StudentScoped {
   link?: TaskLink;
   /** Revision task planned for this exam task (id). */
   examId?: string;
+  /** Set on a repeating task's hidden template (never shown itself). */
+  repeat?: RepeatRule;
+  /** Set on each day's copy of a repeating task: the template's id. */
+  routineId?: string;
   done: boolean;
   doneAt?: ISODateString;
   /** Hong Kong school year the task belongs to, e.g. "2026-27". */
@@ -85,6 +111,8 @@ export interface TaskInput {
   minutes?: number;
   notes?: string;
   link?: TaskLink;
+  /** Repeat from `date` on; missing = once. */
+  repeat?: { kind: RepeatKind; weekdays?: number[]; end?: DateKey };
   /** createMany only: a name for this new task, so others in the same batch can point at it. */
   ref?: string;
   /** createMany only: this is a revision task for the batch task with this ref. */

@@ -8,6 +8,7 @@ import {
   type PlannerColor,
   type PlannerSettings,
   type PracticeSession,
+  type RepeatRule,
   type StudentTask,
 } from "@/types";
 
@@ -152,7 +153,8 @@ export function todayView(tasks: StudentTask[], today: DateKey): TodayView {
   const todays = sorted.filter((t) => t.date === today);
   const horizon = addDays(today, 14);
   return {
-    overdue: sorted.filter((t) => !t.done && t.date < today),
+    // A missed day of a repeating task doesn't pile up as overdue (it still shows in check-in).
+    overdue: sorted.filter((t) => !t.done && t.date < today && !t.routineId),
     today: todays,
     upcoming: sorted.filter((t) => !t.done && t.date > today && t.date <= horizon),
     countdowns: sorted
@@ -162,6 +164,32 @@ export function todayView(tasks: StudentTask[], today: DateKey): TodayView {
     done: todays.filter((t) => t.done).length,
     total: todays.length,
   };
+}
+
+// ---- repeating tasks ----------------------------------------------------------
+
+/** Does a repeat rule put a task on this day? */
+export function repeatsOn(rule: RepeatRule, day: DateKey): boolean {
+  if (day < rule.start || (rule.end && day > rule.end)) return false;
+  if (rule.pausedUntil && day <= rule.pausedUntil) return false;
+  if (rule.skip?.includes(day)) return false;
+  const weekday = parseDateKey(day).getDay();
+  if (rule.kind === "schoolDays") return weekday >= 1 && weekday <= 5;
+  if (rule.kind === "weekly") return rule.weekdays?.includes(weekday) ?? false;
+  return true;
+}
+
+/** Id of a repeating task's copy for one day — the same on every device, so syncing never duplicates it. */
+export const occurrenceId = (templateId: string, day: DateKey) => `${templateId}~${day}`;
+
+/** Days from `from` to `to` (inclusive) a repeating task falls on. */
+export function occurrenceDays(rule: RepeatRule, from: DateKey, to: DateKey): DateKey[] {
+  const days: DateKey[] = [];
+  for (let day = from < rule.start ? rule.start : from; day <= to; day = addDays(day, 1)) {
+    if (rule.end && day > rule.end) break;
+    if (repeatsOn(rule, day)) days.push(day);
+  }
+  return days;
 }
 
 // ---- check-in (打卡) ----------------------------------------------------------

@@ -41,6 +41,7 @@ export function TaskRow({
     showDate && formatDay(task.date, settings.locale),
     task.time,
     task.minutes && t("planner.minutes", { n: task.minutes }),
+    task.routineId && "🔁",
   ].filter(Boolean);
   const editHref = plannerRoutes.editTask(task.id);
 

@@ -11,6 +11,7 @@ import {
 import { MemoryStore } from "@/lib/data/local/keyValueStore";
 import { createLocalRepositories } from "@/lib/data/local/localRepositories";
 import type { DictationList, StudentProfile } from "@/types";
+import { PlannerService } from "@/lib/planner/PlannerService";
 import { CloudSyncService } from "./CloudSyncService";
 import { fingerprint, planSync, recordKey, toLocalRecords } from "./syncEngine";
 
@@ -236,6 +237,29 @@ describe("CloudSyncService (two devices)", () => {
     await phone.sync.syncNow();
     await ipad.sync.syncNow();
     expect((await ipad.repos.tasks.getForStudent("a", "t1"))?.done).toBe(true);
+  });
+
+  it("a repeating task ticked on one device isn't undone by another device that only looked at it", async () => {
+    const ipad = device(cloud);
+    await ipad.repos.students.save(student("a", "小明"));
+    const ipadPlanner = new PlannerService(ipad.repos.tasks, ipad.repos.planner, ipad.repos.practice, ipad.repos.content);
+    await ipadPlanner.create("a", { title: "Check handbook", categoryId: "other", date: "2026-10-26", repeat: { kind: "daily" } });
+    await ipad.sync.signUp("Mum-Family", "pw123456");
+
+    const phone = device(cloud);
+    await phone.sync.signIn("Mum-Family", "pw123456");
+    const phonePlanner = new PlannerService(phone.repos.tasks, phone.repos.planner, phone.repos.practice, phone.repos.content);
+    expect((await phonePlanner.listTasks("a", "2026-10-26")).filter((t) => t.date === "2026-10-26")).toHaveLength(1); // phone shows today's copy
+
+    const today = (await ipadPlanner.listTasks("a", "2026-10-26")).find((t) => t.date === "2026-10-26")!;
+    await ipadPlanner.setDone("a", today.id, true);
+    await ipad.sync.syncNow();
+    await phone.sync.syncNow(); // phone had only displayed it — nothing of its own to upload
+    await ipad.sync.syncNow();
+
+    const ticked = async (p: PlannerService) => (await p.listTasks("a", "2026-10-26")).find((t) => t.date === "2026-10-26")?.done;
+    expect(await ticked(ipadPlanner)).toBe(true);
+    expect(await ticked(phonePlanner)).toBe(true);
   });
 
   it("leaves cloud rows of unknown (newer) collections alone", async () => {
