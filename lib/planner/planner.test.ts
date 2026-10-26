@@ -90,6 +90,14 @@ describe("PlannerService", () => {
     expect(await planner.listTasks("a")).toEqual([]);
   });
 
+  it("creates many tasks at once, or none if one is invalid", async () => {
+    const ok = { title: "交回條", categoryId: "notice", date: "2026-11-07" };
+    expect(await codeOf(planner.createMany("a", [ok, { ...ok, date: "bad" }]))).toBe("task.dateInvalid");
+    expect(await planner.listTasks("a")).toEqual([]);
+    expect(await planner.createMany("a", [ok, { ...ok, title: "中文測驗", categoryId: "exam" }])).toHaveLength(2);
+    expect(await planner.listTasks("a")).toHaveLength(2);
+  });
+
   it("validates input", async () => {
     const base = { title: "x", categoryId: "homework", date: "2026-10-27" };
     expect(await codeOf(planner.create("a", { ...base, title: "  " }))).toBe("task.titleRequired");

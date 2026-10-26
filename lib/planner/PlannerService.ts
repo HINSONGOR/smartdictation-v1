@@ -69,6 +69,24 @@ export class PlannerService {
     return task;
   }
 
+  /** Add several tasks at once (e.g. from a scanned notice). All are checked before any is saved. */
+  async createMany(studentId: string, inputs: TaskInput[]): Promise<StudentTask[]> {
+    const clean = [];
+    for (const input of inputs) clean.push(await this.validate(input));
+    const now = nowIso();
+    const tasks: StudentTask[] = clean.map((c) => ({
+      id: createId(),
+      studentId,
+      ...c,
+      done: false,
+      schoolYear: schoolYearOf(c.date),
+      createdAt: now,
+      updatedAt: now,
+    }));
+    for (const task of tasks) await this.tasks.save(task);
+    return tasks;
+  }
+
   async update(studentId: string, taskId: string, input: TaskInput): Promise<StudentTask> {
     const task = await this.tasks.getForStudent(studentId, taskId);
     if (!task) throw new ServiceError("task.notFound");

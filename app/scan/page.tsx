@@ -1,5 +1,8 @@
-import { ComingSoon } from "@/components/dashboard/ComingSoon";
+"use client";
 
-export default function ScanPage() {
-  return <ComingSoon titleKey="nav.scan" descKey="comingSoon.scan" />;
+import { ScanPage } from "@/components/scan/ScanPage";
+import { RequireStudent } from "@/components/student/RequireStudent";
+
+export default function Scan() {
+  return <RequireStudent>{(student) => <ScanPage student={student} />}</RequireStudent>;
 }

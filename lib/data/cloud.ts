@@ -63,7 +63,7 @@ export interface CloudStore {
 }
 
 /** What a photo is expected to contain. */
-export type OcrTarget = "words" | "passage";
+export type OcrTarget = "words" | "passage" | "events";
 
 export interface OcrRequest {
   /** Base64 image data (no data: prefix). */
@@ -71,6 +71,8 @@ export interface OcrRequest {
   mimeType: string;
   language: "zh" | "en";
   target: OcrTarget;
+  /** "events": today's date "YYYY-MM-DD", so dates without a year can be completed. */
+  today?: string;
 }
 
 /** Photo → text, run in the cloud for the logged-in family account. */

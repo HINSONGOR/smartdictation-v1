@@ -18,7 +18,28 @@ const CORS = {
 };
 
 type Language = "zh" | "en";
-type Target = "words" | "passage";
+type Target = "words" | "passage" | "events";
+const TARGETS: Target[] = ["words", "passage", "events"];
+
+/** School notice / exam timetable / dictation scope → JSON list of dated items. */
+function eventsPrompt(today: string): string {
+  return [
+    "You read photos of Hong Kong primary / secondary school documents for a family study planner:",
+    "school notices, exam or test timetables, dictation schedules and homework lists (Chinese and/or English).",
+    `Today is ${today}. When a date has no year, use the nearest such date on or after today (school year runs September to August).`,
+    "Return JSON only, in this shape:",
+    '{"items":[{"title":string,"date":"YYYY-MM-DD","time":"HH:mm" or null,"kind":"exam"|"dictation"|"homework"|"notice"|"other","subject":"chinese"|"english"|"math"|"gs"|other subject name or null,"scope":[string] or null,"notes":string or null}]}',
+    "Rules:",
+    "- One item per dated thing to do: each exam paper / test / dictation (默書) / deadline (e.g. reply slip 回條, fee, things to bring) / event.",
+    "- kind: exam = exams, tests, quizzes (考試, 測驗, 小測); dictation = 默書 / spelling; homework = 功課, projects; notice = reply slips, fees, bring items, events.",
+    "- subject: chinese (中文), english (英文), math (數學), gs (常識), otherwise the subject name as printed, or null.",
+    "- title: short, in the document's language, e.g. \"中文測驗\", \"English Dictation 3\", \"交回條：旅行日\".",
+    "- scope: the exam / dictation coverage as a list of short parts, e.g. [\"第3課\",\"第4課\",\"詞語表\"], else null.",
+    "- notes: other useful details (time, place, things to bring, amount), else null.",
+    "- Leave out greetings, school name, signatures and general text with no date.",
+    '- If nothing dated is found, return {"items":[]}.',
+  ].join("\n");
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -58,25 +79,28 @@ Deno.serve(async (req) => {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) return json({ error: "notSetUp" }, 500);
 
-  let body: { image?: string; mimeType?: string; language?: Language; target?: Target };
+  let body: { image?: string; mimeType?: string; language?: Language; target?: Target; today?: string };
   try {
     body = await req.json();
   } catch {
     return json({ error: "badRequest" }, 400);
   }
-  const { image, mimeType = "image/jpeg", language, target } = body;
-  if (!image || image.length > MAX_IMAGE_CHARS || !["zh", "en"].includes(language ?? "") || !["words", "passage"].includes(target ?? "")) {
+  const { image, mimeType = "image/jpeg", language, target, today } = body;
+  if (!image || image.length > MAX_IMAGE_CHARS || !["zh", "en"].includes(language ?? "") || !TARGETS.includes(target as Target)) {
     return json({ error: "badRequest" }, 400);
   }
+  if (target === "events" && !/^\d{4}-\d{2}-\d{2}$/.test(today ?? "")) return json({ error: "badRequest" }, 400);
 
   const models = (Deno.env.get("GEMINI_MODELS") ?? "")
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
-  const contents = [{ parts: [{ text: prompt(language!, target!) }, { inline_data: { mime_type: mimeType, data: image } }] }];
+  const instructions = target === "events" ? eventsPrompt(today!) : prompt(language!, target!);
+  const contents = [{ parts: [{ text: instructions }, { inline_data: { mime_type: mimeType, data: image } }] }];
+  const base = target === "events" ? { temperature: 0, responseMimeType: "application/json" } : { temperature: 0 };
   // Reading text needs little "thinking"; low thinking answers much faster.
-  const fast = JSON.stringify({ contents, generationConfig: { temperature: 0, thinkingConfig: { thinkingLevel: "low" } } });
-  const plain = JSON.stringify({ contents, generationConfig: { temperature: 0 } });
+  const fast = JSON.stringify({ contents, generationConfig: { ...base, thinkingConfig: { thinkingLevel: "low" } } });
+  const plain = JSON.stringify({ contents, generationConfig: base });
 
   const call = (model: string, body: string) =>
     fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {

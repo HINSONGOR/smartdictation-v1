@@ -19,7 +19,7 @@ export function PhotoTextButton({
   onText,
 }: {
   language: DictationLanguage;
-  target: OcrTarget;
+  target: Exclude<OcrTarget, "events">;
   onText: (text: string) => string | void;
 }) {
   const { t, services } = useApp();

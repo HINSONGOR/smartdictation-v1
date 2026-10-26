@@ -32,7 +32,7 @@ function stripPinyin(line: string): string {
 }
 
 /** Tidy the recognised text for the editor (it is always checked by a parent before saving). */
-export function cleanOcrText(text: string, target: OcrTarget, language: DictationLanguage = "en"): string {
+export function cleanOcrText(text: string, target: Exclude<OcrTarget, "events">, language: DictationLanguage = "en"): string {
   const lines = text
     .replace(/\r\n?/g, "\n")
     .split("\n")
@@ -64,7 +64,13 @@ export class OcrService {
     return this.cloud.getStatus().state === "signedIn";
   }
 
-  async read(photo: Photo, language: DictationLanguage, target: OcrTarget): Promise<string> {
+  /** School notice / timetable photo → the AI's JSON answer (parse with lib/scan/scanItems). */
+  async readEvents(photo: Photo, language: DictationLanguage, today: string): Promise<string> {
+    if (!this.isAvailable()) throw new CloudError("cloud.signInRequired");
+    return this.engine.recognize({ image: photo.data, mimeType: photo.mimeType, language, target: "events", today });
+  }
+
+  async read(photo: Photo, language: DictationLanguage, target: Exclude<OcrTarget, "events">): Promise<string> {
     if (!this.isAvailable()) throw new CloudError("cloud.signInRequired");
     const text = await this.engine.recognize({ image: photo.data, mimeType: photo.mimeType, language, target });
     return cleanOcrText(text, target, language);
