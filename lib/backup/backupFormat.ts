@@ -25,10 +25,10 @@ export function buildBackupFile(snapshot: LearningDataSnapshot, now: Date): Back
   return { app: BACKUP_APP_ID, formatVersion: BACKUP_FORMAT_VERSION, exportedAt: now.toISOString(), data: snapshot };
 }
 
-/** smartdictation-backup-20261004-1530.json (local time). */
+/** smartstudy-backup-20261004-1530.json (local time). */
 export function backupFileName(now: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `smartdictation-backup-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.json`;
+  return `smartstudy-backup-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.json`;
 }
 
 // ---- validation ---------------------------------------------------------

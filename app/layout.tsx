@@ -7,12 +7,12 @@ import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SmartDictation 智能默書",
-  description: "SmartDictation 智能默書學習系統 — family dictation practice",
-  applicationName: "SmartDictation",
+  title: "SmartStudy",
+  description: "SmartStudy — family study app: planner, dictation, notes, photo scan and AI prompts",
+  applicationName: "SmartStudy",
   appleWebApp: {
     capable: true,
-    title: "智能默書",
+    title: "SmartStudy",
     statusBarStyle: "default",
   },
   icons: {

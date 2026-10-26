@@ -125,7 +125,7 @@ describe("BackupService", () => {
     await repos.owner.save({ ...(await repos.owner.get()), pin: "9999" });
     const backup = await service.createBackup(new Date(2026, 9, 4, 15, 30));
     expect(backup.fileName).toBe(backupFileName(new Date(2026, 9, 4, 15, 30)));
-    expect(backup.fileName).toBe("smartdictation-backup-20261004-1530.json");
+    expect(backup.fileName).toBe("smartstudy-backup-20261004-1530.json");
     expect(backup.counts).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 1, tasks: 0, planner: 0, prompts: 0, knowledge: 0 });
     expect(backup.json).not.toContain("9999");
     expect(await service.lastBackupAt()).toBe(new Date(2026, 9, 4, 15, 30).toISOString());

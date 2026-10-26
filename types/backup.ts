@@ -23,6 +23,7 @@ export interface LearningDataSnapshot {
   prompts: PromptEntry[];
 }
 
+/** Kept as "SmartDictation" (the app's former name) so older backup files still import. */
 export const BACKUP_APP_ID = "SmartDictation";
 /** 2: adds tasks + planner. Format 1 files still import (with no tasks). */
 export const BACKUP_FORMAT_VERSION = 2;

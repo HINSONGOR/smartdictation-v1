@@ -7,9 +7,9 @@ export const dynamic = "force-static";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: withBase("/"),
-    name: "SmartDictation 智能默書學習系統",
-    short_name: "智能默書",
-    description: "SmartDictation — family dictation practice for Chinese and English.",
+    name: "SmartStudy",
+    short_name: "SmartStudy",
+    description: "SmartStudy — family study app: planner, dictation, notes, photo scan and AI prompts.",
     start_url: withBase("/dashboard"),
     scope: withBase("/"),
     display: "standalone",

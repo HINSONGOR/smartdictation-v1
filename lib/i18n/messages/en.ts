@@ -1,7 +1,7 @@
 import type { Messages } from "./zh-HK";
 
 export const en: Messages = {
-  "app.name": "SmartDictation",
+  "app.name": "SmartStudy",
   "app.loading": "Loading…",
 
   "nav.home": "Home",
@@ -88,7 +88,7 @@ export const en: Messages = {
   "help.contents": "Contents",
   "help.open": "Open",
   "help.settingsHint": "Getting started, word lists, practice, backup…",
-  "settings.version": "SmartDictation v{version}",
+  "settings.version": "SmartStudy v{version}",
   "backupReminder.never": "Your data has never been backed up",
   "backupReminder.overdue": "No backup for {days} days",
   "backupReminder.hint": "All data lives only on this device — a parent can export a backup in Settings → Owner Settings.",
@@ -193,8 +193,8 @@ export const en: Messages = {
   "settings.ttsTestZh": "Test Chinese voice",
   "settings.ttsTestEn": "Test English voice",
   "settings.ttsUnsupported": "Speech synthesis is not supported in this browser.",
-  "settings.ttsSampleZh": "你好，歡迎使用智能默書。",
-  "settings.ttsSampleEn": "Hello, welcome to SmartDictation.",
+  "settings.ttsSampleZh": "你好，歡迎使用 SmartStudy。",
+  "settings.ttsSampleEn": "Hello, welcome to SmartStudy.",
 
   "locale.zh-HK": "中文",
   "locale.en": "English",
@@ -400,7 +400,7 @@ export const en: Messages = {
   "error.student.nameTaken": "There is already a student with this name.",
   "error.owner.pinInvalid": "PIN must be 4 digits.",
   "error.backup.invalidFile": "This file is not a valid backup.",
-  "error.backup.wrongApp": "This file is not a SmartDictation backup.",
+  "error.backup.wrongApp": "This file is not a SmartStudy backup.",
   "error.backup.newerVersion": "This backup comes from a newer version — please update the app first.",
   "error.backup.tooManyStudents": "Importing would exceed {maxStudents} students. Delete some students first, or use “Replace all”.",
   "error.cloud.invalidCredentials": "Wrong account name or password.",

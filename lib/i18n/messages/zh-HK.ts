@@ -1,6 +1,6 @@
 /** Source of truth for message keys. Other locales must provide every key. */
 export const zhHK = {
-  "app.name": "智能默書",
+  "app.name": "SmartStudy",
   "app.loading": "載入中…",
 
   "nav.home": "主頁",
@@ -87,7 +87,7 @@ export const zhHK = {
   "help.contents": "目錄",
   "help.open": "打開",
   "help.settingsHint": "第一次使用、輸入範圍、默書、備份…",
-  "settings.version": "智能默書 V{version}",
+  "settings.version": "SmartStudy V{version}",
   "backupReminder.never": "資料仲未備份過",
   "backupReminder.overdue": "已經 {days} 日冇備份資料",
   "backupReminder.hint": "所有資料只存喺呢部機，請家長到「設定 → 家長設定」匯出備份。",
@@ -192,8 +192,8 @@ export const zhHK = {
   "settings.ttsTestZh": "測試中文語音",
   "settings.ttsTestEn": "測試英文語音",
   "settings.ttsUnsupported": "此瀏覽器不支援語音合成。",
-  "settings.ttsSampleZh": "你好，歡迎使用智能默書。",
-  "settings.ttsSampleEn": "Hello, welcome to SmartDictation.",
+  "settings.ttsSampleZh": "你好，歡迎使用 SmartStudy。",
+  "settings.ttsSampleEn": "Hello, welcome to SmartStudy.",
 
   "locale.zh-HK": "中文",
   "locale.en": "English",
@@ -399,7 +399,7 @@ export const zhHK = {
   "error.student.nameTaken": "已經有同名的學生。",
   "error.owner.pinInvalid": "PIN 必須是 4 位數字。",
   "error.backup.invalidFile": "呢個檔案唔係有效嘅備份檔。",
-  "error.backup.wrongApp": "呢個檔案唔係智能默書嘅備份。",
+  "error.backup.wrongApp": "呢個檔案唔係 SmartStudy 嘅備份。",
   "error.backup.newerVersion": "呢個備份來自較新版本，請先更新 App。",
   "error.backup.tooManyStudents": "匯入後會超過 {maxStudents} 個學生。請先刪除部分學生，或者用「取代全部」。",
   "error.cloud.invalidCredentials": "帳戶名或密碼不正確。",

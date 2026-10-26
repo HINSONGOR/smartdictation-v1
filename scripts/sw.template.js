@@ -1,4 +1,4 @@
-// SmartDictation service worker.
+// SmartStudy service worker.
 // GENERATED into public/sw.js by scripts/build-sw.mjs — edit scripts/sw.template.js instead.
 //
 // Strategy
