@@ -20,6 +20,7 @@ import {
   type DayStatus,
   type ExamCard,
 } from "@/lib/planner/plannerRules";
+import { scopeFromNotes } from "@/lib/scan/scanItems";
 import type { StudentSummary } from "@/lib/student/StudentService";
 import { THEME_PRESETS } from "@/lib/theme";
 import type { DateKey, StudentTask } from "@/types";
@@ -352,6 +353,8 @@ function ExamCardView({ card, data, today, onToggle }: { card: ExamCard; data: P
   const countdown =
     days < 0 ? t("planner.examDone") : days === 0 ? t("planner.countdownToday") : days === 1 ? t("planner.countdownTomorrow") : t("planner.countdownDays", { n: days });
   const soon = days >= 0 && days <= 7;
+  // Older scanned exams kept "範圍：…" in their notes.
+  const { scope, notes } = exam.scope?.length ? { scope: exam.scope, notes: exam.notes ?? "" } : scopeFromNotes(exam.notes);
 
   return (
     <li className={`overflow-hidden rounded-card border bg-surface shadow-card ${soon ? "border-reveal border-2" : "border-border"}`}>
@@ -359,16 +362,36 @@ function ExamCardView({ card, data, today, onToggle }: { card: ExamCard; data: P
         <span aria-hidden="true" className="w-1.5 shrink-0" style={{ backgroundColor: COLOR_HEX[subject?.color ?? category.color] }} />
         <div className="min-w-0 flex-1 space-y-2 p-4">
           <div className="flex items-start justify-between gap-3">
-            <Link href={plannerRoutes.editTask(exam.id)} className="min-w-0 font-semibold text-foreground hover:underline">
+            <p className="min-w-0 font-semibold text-foreground">
               <span aria-hidden="true">{category.icon} </span>
               {exam.title}
-            </Link>
+            </p>
             <span className={`shrink-0 text-sm font-bold ${soon ? "text-foreground" : "text-muted"}`}>{countdown}</span>
           </div>
-          <p className="text-xs text-muted">
-            {[formatDay(exam.date, settings.locale), exam.time, subject && subjectName(t, subject)].filter(Boolean).join(" · ")}
-          </p>
-          {exam.notes && <p className="text-sm whitespace-pre-line text-foreground">{exam.notes}</p>}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted">
+              {[formatDay(exam.date, settings.locale), exam.time, subject && subjectName(t, subject)].filter(Boolean).join(" · ")}
+            </p>
+            <Link
+              href={plannerRoutes.editTask(exam.id)}
+              className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-border px-3 text-xs font-medium text-primary hover:bg-primary-soft"
+            >
+              {t("planner.editExam")}
+            </Link>
+          </div>
+          {scope.length > 0 ? (
+            <div className="rounded-control bg-surface-muted p-3">
+              <p className="mb-1 text-xs font-semibold text-foreground">{t("planner.scopeTitle")}</p>
+              <ul className="list-disc space-y-0.5 pl-5 text-sm text-foreground">
+                {scope.map((part, i) => (
+                  <li key={i}>{part}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-xs text-muted">{t("planner.noScope")}</p>
+          )}
+          {notes && <p className="text-sm whitespace-pre-line text-foreground">{notes}</p>}
           {revision.length > 0 && (
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs text-muted">

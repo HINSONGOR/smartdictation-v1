@@ -73,6 +73,8 @@ export interface OcrRequest {
   target: OcrTarget;
   /** "events": today's date "YYYY-MM-DD", so dates without a year can be completed. */
   today?: string;
+  /** Several pages read together (e.g. timetable + coverage sheet); `image` is then the first one. */
+  images?: { image: string; mimeType: string }[];
 }
 
 /** Photo → text, run in the cloud for the logged-in family account. */

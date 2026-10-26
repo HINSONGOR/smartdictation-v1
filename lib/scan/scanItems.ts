@@ -97,8 +97,19 @@ export function parseScanResult(
   return items.sort((a, b) => a.date.localeCompare(b.date) || (a.time ?? "").localeCompare(b.time ?? ""));
 }
 
-/** Task notes for a scanned item: "範圍：第3課、第4課" + the AI's notes. */
-export function notesFor(item: Pick<ScannedItem, "scope" | "notes">, scopeLabel: (parts: string) => string): string | undefined {
-  const lines = [item.scope.length ? scopeLabel(item.scope.join("、")) : "", item.notes ?? ""].filter(Boolean);
-  return lines.length ? lines.join("\n") : undefined;
+const SCOPE_LINE = /^\s*(?:範圍|Scope)\s*[:：]\s*(.+)$/i;
+
+/**
+ * Exams scanned before the scope field existed kept "範圍：第3課、第4課" as a line of their notes.
+ * Split it back out: { scope: ["第3課", "第4課"], notes: the other lines }.
+ */
+export function scopeFromNotes(notes: string | undefined): { scope: string[]; notes: string } {
+  const scope: string[] = [];
+  const rest: string[] = [];
+  for (const line of (notes ?? "").split("\n")) {
+    const match = line.match(SCOPE_LINE);
+    if (match) scope.push(...match[1].split(/[、,，;；]/).map((s) => s.trim()).filter(Boolean));
+    else rest.push(line);
+  }
+  return { scope, notes: rest.join("\n").trim() };
 }

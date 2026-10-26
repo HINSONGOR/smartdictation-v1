@@ -13,11 +13,13 @@ import { photoFromFile } from "@/lib/ocr/photo";
 import { dateKey, type SubjectView } from "@/lib/planner/plannerRules";
 import type { PlannerOptions } from "@/lib/planner/PlannerService";
 import { planRevision } from "@/lib/planner/revisionPlan";
-import { notesFor, parseScanResult, type ScannedItem } from "@/lib/scan/scanItems";
+import { parseScanResult, type ScannedItem } from "@/lib/scan/scanItems";
 import type { StudentSummary } from "@/lib/student/StudentService";
 import { TASK_LIMITS, type DateKey, type TaskInput } from "@/types";
 
 const PLAN_DAYS = [3, 5, 7];
+/** Pages of one notice read together (same limit as the cloud function). */
+const MAX_PHOTOS = 4;
 const REVISION_MINUTES = 20;
 
 type Row = ScannedItem & { plan: boolean; planDays: number };
@@ -56,14 +58,16 @@ export function ScanPage({ student }: { student: StudentSummary }) {
   }
 
   async function read(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    // Several pages of one notice (e.g. timetable + coverage sheet) are read together.
+    const files = [...(event.target.files ?? [])].slice(0, MAX_PHOTOS);
     event.target.value = "";
-    if (!file || !options) return;
+    if (!files.length || !options) return;
     const had = rows.length > 0;
     setPhase({ kind: "reading" });
     setError(null);
     try {
-      const answer = await services.ocr.readEvents(await photoFromFile(file), settings.locale === "en" ? "en" : "zh", today);
+      const photos = await Promise.all(files.map(photoFromFile));
+      const answer = await services.ocr.readEvents(photos, settings.locale === "en" ? "en" : "zh", today);
       const items = parseScanResult(answer, today, options.subjects, subjectNames);
       if (items === null) throw new Error("unreadable");
       if (items.length === 0) setError(t("scan.nothingFound"));
@@ -88,7 +92,8 @@ export function ScanPage({ student }: { student: StudentSummary }) {
         subjectId: row.subjectId,
         date: row.date,
         time: row.time,
-        notes: notesFor(row, (parts) => t("scan.scopeNote", { parts })),
+        notes: row.notes,
+        scope: row.scope,
         ref: row.key,
       });
       if (row.plan && row.categoryId === "exam") {
@@ -125,7 +130,7 @@ export function ScanPage({ student }: { student: StudentSummary }) {
   }
 
   const included = rows.filter((r) => r.include);
-  const fileInput = <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={read} />;
+  const fileInput = <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={read} />;
 
   if (phase.kind === "done") {
     return (

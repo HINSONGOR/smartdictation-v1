@@ -86,6 +86,8 @@ export interface StudentTask extends Entity, StudentScoped {
   /** Estimated minutes. */
   minutes?: number;
   notes?: string;
+  /** Exams / dictations: what is tested, one part per entry (e.g. "第3課", "Unit 2"). */
+  scope?: string[];
   link?: TaskLink;
   /** Revision task planned for this exam task (id). */
   examId?: string;
@@ -111,6 +113,7 @@ export interface TaskInput {
   time?: string;
   minutes?: number;
   notes?: string;
+  scope?: string[];
   link?: TaskLink;
   /** Repeat from `date` on; missing = once. */
   repeat?: { kind: RepeatKind; weekdays?: number[]; end?: DateKey };
@@ -127,6 +130,8 @@ export const TASK_LIMITS = {
   categoryNameMaxLength: 12,
   maxCustomCategories: 20,
   maxCustomSubjects: 20,
+  maxScopeParts: 30,
+  scopePartMaxLength: 60,
 } as const;
 
 /** Exams / dictations show a countdown on the home screen this many days ahead. */

@@ -10,6 +10,7 @@ import { ErrorText, TextInput } from "@/components/ui/TextInput";
 import { errorMessage, type MessageKey } from "@/lib/i18n";
 import { dateKey } from "@/lib/planner/plannerRules";
 import type { PlannerOptions, RepeatScope } from "@/lib/planner/PlannerService";
+import { scopeFromNotes } from "@/lib/scan/scanItems";
 import { TASK_LIMITS, type DateKey, type DictationList, type KnowledgeItem, type RepeatKind, type StudentTask, type TaskLink } from "@/types";
 import { COLOR_HEX, categoryName, formatDay, plannerRoutes, subjectName } from "./plannerUi";
 
@@ -98,7 +99,11 @@ function TaskForm({ studentId, loaded, initialDate }: { studentId: string; loade
   const [time, setTime] = useState(task?.time ?? "");
   const [minutes, setMinutes] = useState(task?.minutes ? String(task.minutes) : "");
   const [link, setLink] = useState(linkValue(task?.link));
-  const [notes, setNotes] = useState(task?.notes ?? "");
+  // Older scanned exams kept "範圍：…" in their notes — shown here in the scope box instead.
+  const legacy = task?.scope?.length ? { scope: task.scope, notes: task.notes ?? "" } : scopeFromNotes(task?.notes);
+  const [notes, setNotes] = useState(legacy.notes);
+  const [scopeText, setScopeText] = useState(legacy.scope.join("\n"));
+  const isExam = categoryId === "exam" || categoryId === "dictation";
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -150,6 +155,7 @@ function TaskForm({ studentId, loaded, initialDate }: { studentId: string; loade
       time: time || undefined,
       minutes: minutes ? Number(minutes) : undefined,
       notes,
+      scope: isExam ? scopeText.split("\n") : [],
       link: parseLink(link, lists, knowledge),
       repeat:
         repeatEditable && repeat !== "none"
@@ -337,6 +343,23 @@ function TaskForm({ studentId, loaded, initialDate }: { studentId: string; loade
           </select>
           <p className="mt-1 text-xs text-muted">{t("planner.linkHelp")}</p>
         </div>
+
+        {isExam && (
+          <div>
+            <label htmlFor="task-scope" className="mb-1 block text-sm font-medium text-foreground">
+              {t("planner.fieldScope")}
+            </label>
+            <textarea
+              id="task-scope"
+              value={scopeText}
+              onChange={(e) => setScopeText(e.target.value)}
+              rows={Math.min(Math.max(scopeText.split("\n").length + 1, 3), 10)}
+              placeholder={t("planner.scopePlaceholder")}
+              className={TEXTAREA}
+            />
+            <p className="mt-1 text-xs text-muted">{t("planner.scopeHelp")}</p>
+          </div>
+        )}
 
         <div>
           <label htmlFor="task-notes" className="mb-1 block text-sm font-medium text-foreground">

@@ -9,7 +9,7 @@ const PUBLISHABLE_KEY = "sb_publishable_f96LaJw842ueyel5_nnxWg_6vU4KBF0";
 /** ~6 MB of base64; the app shrinks photos to well below this. */
 const MAX_IMAGE_CHARS = 8_000_000;
 /** Give up on one model after this long and let the next one try. */
-const MODEL_TIMEOUT_MS = 25_000;
+const MODEL_TIMEOUT_MS = 40_000;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +20,8 @@ const CORS = {
 type Language = "zh" | "en";
 type Target = "words" | "passage" | "events" | "qa";
 const TARGETS: Target[] = ["words", "passage", "events", "qa"];
+/** Several pages read together (e.g. an exam timetable + a separate coverage sheet). */
+const MAX_IMAGES = 4;
 
 /** Question-and-answer revision worksheet → JSON list of question / answer pairs. */
 function qaPrompt(): string {
@@ -44,10 +46,13 @@ function eventsPrompt(today: string): string {
     "You read photos of Hong Kong primary / secondary school documents for a family study planner:",
     "school notices, exam or test timetables, dictation schedules and homework lists (Chinese and/or English).",
     `Today is ${today}. When a date has no year, use the nearest such date on or after today (school year runs September to August).`,
+    "There may be several photos of one notice: e.g. one page with the exam timetable (dates) and another page with the exam coverage (考試範圍, often without dates). Read them together as one document.",
     "Return JSON only, in this shape:",
-    '{"items":[{"title":string,"date":"YYYY-MM-DD","time":"HH:mm" or null,"kind":"exam"|"dictation"|"homework"|"notice"|"other","subject":"chinese"|"english"|"math"|"gs"|other subject name or null,"scope":[string] or null,"notes":string or null}]}',
+    '{"items":[{"title":string,"date":"YYYY-MM-DD" or null,"time":"HH:mm" or null,"kind":"exam"|"dictation"|"homework"|"notice"|"other","subject":"chinese"|"english"|"math"|"gs"|other subject name or null,"scope":[string] or null,"notes":string or null}]}',
     "Rules:",
     "- One item per dated thing to do: each exam paper / test / dictation (默書) / deadline (e.g. reply slip 回條, fee, things to bring) / event.",
+    "- Coverage printed on another page goes into the scope of the matching dated exam item (same subject; same paper when a subject has several, e.g. English Listening vs General English & Writing). Never repeat it as a separate item.",
+    "- Only coverage that matches no dated item becomes its own item, with date null.",
     "- kind: exam = exams, tests, quizzes (考試, 測驗, 小測); dictation = 默書 / spelling; homework = 功課, projects; notice = reply slips, fees, bring items, events.",
     "- subject: chinese (中文), english (英文), math (數學), gs (常識), otherwise the subject name as printed, or null.",
     "- title: short, in the document's language, e.g. \"中文測驗\", \"English Dictation 3\", \"交回條：旅行日\".",
@@ -96,14 +101,18 @@ Deno.serve(async (req) => {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) return json({ error: "notSetUp" }, 500);
 
-  let body: { image?: string; mimeType?: string; language?: Language; target?: Target; today?: string };
+  type Img = { image?: string; mimeType?: string };
+  let body: Img & { images?: Img[]; language?: Language; target?: Target; today?: string };
   try {
     body = await req.json();
   } catch {
     return json({ error: "badRequest" }, 400);
   }
-  const { image, mimeType = "image/jpeg", language, target, today } = body;
-  if (!image || image.length > MAX_IMAGE_CHARS || !["zh", "en"].includes(language ?? "") || !TARGETS.includes(target as Target)) {
+  const { language, target, today } = body;
+  // One photo (image) or several read together (images).
+  const photos = (Array.isArray(body.images) && body.images.length ? body.images : [body]).slice(0, MAX_IMAGES);
+  const photosOk = photos.every((p) => typeof p.image === "string" && p.image.length > 0 && p.image.length <= MAX_IMAGE_CHARS);
+  if (!photosOk || !["zh", "en"].includes(language ?? "") || !TARGETS.includes(target as Target)) {
     return json({ error: "badRequest" }, 400);
   }
   if (target === "events" && !/^\d{4}-\d{2}-\d{2}$/.test(today ?? "")) return json({ error: "badRequest" }, 400);
@@ -113,7 +122,8 @@ Deno.serve(async (req) => {
     .map((m) => m.trim())
     .filter(Boolean);
   const instructions = target === "events" ? eventsPrompt(today!) : target === "qa" ? qaPrompt() : prompt(language!, target!);
-  const contents = [{ parts: [{ text: instructions }, { inline_data: { mime_type: mimeType, data: image } }] }];
+  const images = photos.map((p) => ({ inline_data: { mime_type: p.mimeType || "image/jpeg", data: p.image } }));
+  const contents = [{ parts: [{ text: instructions }, ...images] }];
   const base = target === "events" || target === "qa" ? { temperature: 0, responseMimeType: "application/json" } : { temperature: 0 };
   // Reading text needs little "thinking"; low thinking answers much faster.
   const fast = JSON.stringify({ contents, generationConfig: { ...base, thinkingConfig: { thinkingLevel: "low" } } });

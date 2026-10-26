@@ -287,8 +287,8 @@ export class PlannerService {
 
   /** The task with the editor's fields (optional ones missing from `clean` are cleared). */
   private withFields(task: StudentTask, clean: TaskFields): StudentTask {
-    const { subjectId: _s, time: _t, minutes: _m, notes: _n, link: _l, ...kept } = task;
-    void [_s, _t, _m, _n, _l];
+    const { subjectId: _s, time: _t, minutes: _m, notes: _n, link: _l, scope: _c, ...kept } = task;
+    void [_s, _t, _m, _n, _l, _c];
     return { ...kept, ...clean, schoolYear: schoolYearOf(clean.date) };
   }
 
@@ -340,6 +340,11 @@ export class PlannerService {
     if (input.time && /^\d{2}:\d{2}$/.test(input.time)) clean.time = input.time;
     if (minutes !== undefined) clean.minutes = minutes;
     if (notes) clean.notes = notes;
+    const scope = (input.scope ?? [])
+      .map((part) => part.trim().slice(0, TASK_LIMITS.scopePartMaxLength))
+      .filter(Boolean)
+      .slice(0, TASK_LIMITS.maxScopeParts);
+    if (scope.length) clean.scope = scope;
     if (input.link) clean.link = input.link;
     return clean;
   }

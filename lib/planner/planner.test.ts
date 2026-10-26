@@ -136,6 +136,13 @@ describe("PlannerService", () => {
     expect("ref" in exam || "examRef" in revision).toBe(false); // batch names are not stored
   });
 
+  it("keeps an exam's scope (trimmed, empty parts dropped) and clears it when emptied", async () => {
+    const exam = await planner.create("a", { title: "中文測驗", categoryId: "exam", date: "2026-11-13", scope: [" 第3課 ", "", "第4課"] });
+    expect(exam.scope).toEqual(["第3課", "第4課"]);
+    const cleared = await planner.update("a", exam.id, { title: "中文測驗", categoryId: "exam", date: "2026-11-13", scope: [] });
+    expect(cleared.scope).toBeUndefined();
+  });
+
   it("validates input", async () => {
     const base = { title: "x", categoryId: "homework", date: "2026-10-27" };
     expect(await codeOf(planner.create("a", { ...base, title: "  " }))).toBe("task.titleRequired");

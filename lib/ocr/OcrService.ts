@@ -70,10 +70,21 @@ export class OcrService {
     return this.engine.recognize({ image: photo.data, mimeType: photo.mimeType, language, target: "qa" });
   }
 
-  /** School notice / timetable photo → the AI's JSON answer (parse with lib/scan/scanItems). */
-  async readEvents(photo: Photo, language: DictationLanguage, today: string): Promise<string> {
+  /**
+   * School notice / timetable photos → the AI's JSON answer (parse with lib/scan/scanItems).
+   * Several photos are read together, so a coverage sheet without dates is matched to the timetable.
+   */
+  async readEvents(photos: Photo[], language: DictationLanguage, today: string): Promise<string> {
     if (!this.isAvailable()) throw new CloudError("cloud.signInRequired");
-    return this.engine.recognize({ image: photo.data, mimeType: photo.mimeType, language, target: "events", today });
+    const [first] = photos;
+    return this.engine.recognize({
+      image: first.data,
+      mimeType: first.mimeType,
+      ...(photos.length > 1 ? { images: photos.map((p) => ({ image: p.data, mimeType: p.mimeType })) } : {}),
+      language,
+      target: "events",
+      today,
+    });
   }
 
   async read(photo: Photo, language: DictationLanguage, target: "words" | "passage"): Promise<string> {

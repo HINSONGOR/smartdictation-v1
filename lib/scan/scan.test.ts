@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { planRevision } from "@/lib/planner/revisionPlan";
 import { subjectsOf } from "@/lib/planner/plannerRules";
-import { notesFor, parseScanResult } from "./scanItems";
+import { parseScanResult, scopeFromNotes } from "./scanItems";
 
 const subjects = subjectsOf({ id: "planner", categories: [], subjects: [{ id: "s-phy", name: "物理", color: "teal" }], updatedAt: "" });
 const NAMES: Record<string, string[]> = { chinese: ["中文", "Chinese"], english: ["英文", "English"], math: ["數學", "Maths"], gs: ["常識"] };
@@ -36,9 +36,10 @@ describe("parseScanResult", () => {
     expect(parseScanResult('{"items":[]}', "2026-10-26", subjects, names)).toEqual([]);
   });
 
-  it("builds task notes from scope and notes", () => {
-    expect(notesFor({ scope: ["第3課", "第4課"], notes: "帶字典" }, (p) => `範圍：${p}`)).toBe("範圍：第3課、第4課\n帶字典");
-    expect(notesFor({ scope: [] }, (p) => p)).toBeUndefined();
+  it("moves an old \"範圍：…\" notes line into the scope", () => {
+    expect(scopeFromNotes("範圍：第3課、第4課\n帶字典")).toEqual({ scope: ["第3課", "第4課"], notes: "帶字典" });
+    expect(scopeFromNotes("Scope: Unit 1, Unit 2")).toEqual({ scope: ["Unit 1", "Unit 2"], notes: "" });
+    expect(scopeFromNotes(undefined)).toEqual({ scope: [], notes: "" });
   });
 });
 

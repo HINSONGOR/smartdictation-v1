@@ -14,7 +14,7 @@ import {
 const TABLE = "sync_records";
 const PAGE = 1000;
 /** Stop waiting for a photo to be read after this long. */
-const OCR_TIMEOUT_MS = 90_000;
+const OCR_TIMEOUT_MS = 130_000;
 
 interface Row {
   collection: RemoteRecord["collection"];
