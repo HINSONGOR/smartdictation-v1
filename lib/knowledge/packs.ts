@@ -1,4 +1,5 @@
 import type { KnowledgeInput } from "@/types";
+import { ENGLISH_TENSE_CARDS, ENGLISH_TENSE_NOTES } from "./packsEnglish";
 
 /**
  * Ready-made knowledge packs a family can add with one tap (not added automatically:
@@ -7,7 +8,7 @@ import type { KnowledgeInput } from "@/types";
  */
 export interface KnowledgePack {
   id: string;
-  titleKey: "knowledge.pack.shapes" | "knowledge.pack.shapeCards";
+  titleKey: "knowledge.pack.shapes" | "knowledge.pack.shapeCards" | "knowledge.pack.tenses" | "knowledge.pack.tenseCards";
   items: KnowledgeInput[];
 }
 
@@ -124,4 +125,6 @@ const SHAPE_CARDS: KnowledgeInput[] = [
 export const KNOWLEDGE_PACKS: KnowledgePack[] = [
   { id: "shapes", titleKey: "knowledge.pack.shapes", items: SHAPES },
   { id: "shapeCards", titleKey: "knowledge.pack.shapeCards", items: SHAPE_CARDS },
+  { id: "tenses", titleKey: "knowledge.pack.tenses", items: ENGLISH_TENSE_NOTES },
+  { id: "tenseCards", titleKey: "knowledge.pack.tenseCards", items: ENGLISH_TENSE_CARDS },
 ];

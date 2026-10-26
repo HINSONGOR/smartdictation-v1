@@ -108,9 +108,13 @@ describe("knowledge packs", () => {
       expect(await knowledge.addPack("a", pack.items)).toBe(0);
     }
     const items = await knowledge.list("a");
-    expect(items.filter((i) => i.kind === "note")).toHaveLength(10); // 9 shapes + tips
-    expect(items.filter((i) => i.kind === "example")).toHaveLength(9);
-    expect(items.every((i) => i.subjectId === "math")).toBe(true);
+    const math = items.filter((i) => i.subjectId === "math");
+    expect(math.filter((i) => i.kind === "note")).toHaveLength(10); // 9 shapes + tips
+    expect(math.filter((i) => i.kind === "example")).toHaveLength(9);
+    const english = items.filter((i) => i.subjectId === "english");
+    expect(english.filter((i) => i.kind === "note")).toHaveLength(12); // 11 tenses + traps
+    expect(english.filter((i) => i.kind === "qa")).toHaveLength(18);
+    expect(math.length + english.length).toBe(items.length);
   });
 
   it("worked examples add up (π = 3.14)", () => {
