@@ -43,6 +43,14 @@ export class KnowledgeService {
     return items;
   }
 
+  /** Add a ready-made pack; items with a title already in the library are skipped. Returns how many were added. */
+  async addPack(studentId: string, inputs: KnowledgeInput[]): Promise<number> {
+    const have = new Set((await this.items.listByStudent(studentId)).map((i) => i.title));
+    const fresh = inputs.filter((i) => !have.has(i.title));
+    await this.createMany(studentId, fresh);
+    return fresh.length;
+  }
+
   async update(studentId: string, id: string, input: KnowledgeInput): Promise<KnowledgeItem> {
     const item = await this.require(studentId, id);
     const { subjectId: _s, topic: _t, answer: _a, examples: _e, pinned: _p, ...kept } = item;

@@ -8,6 +8,7 @@ import type { KnowledgeInput } from "@/types";
 import { subjectsOf } from "@/lib/planner/plannerRules";
 import { parseQaResult } from "@/lib/scan/qaScan";
 import { KnowledgeService, vocabItemsText, vocabLanguage } from "./KnowledgeService";
+import { KNOWLEDGE_PACKS } from "./packs";
 
 const codeOf = (p: Promise<unknown>) => p.then(() => null, (e: unknown) => (e instanceof ServiceError ? e.code : String(e)));
 
@@ -95,5 +96,30 @@ describe("scanned Q&A worksheet", () => {
     expect(await knowledge.list("a")).toEqual([]); // nothing saved
     const added = await knowledge.createMany("a", [{ kind: "qa", title: "Q1", body: "", answer: "A1", topic: "第四課", subjectId: "gs" }]);
     expect(added[0]).toMatchObject({ kind: "qa", title: "Q1", answer: "A1", topic: "第四課", subjectId: "gs" });
+  });
+});
+
+describe("knowledge packs", () => {
+  it("are all valid, and adding twice doesn't duplicate", async () => {
+    const repos = createLocalRepositories(new MemoryStore());
+    const knowledge = new KnowledgeService(repos.knowledge);
+    for (const pack of KNOWLEDGE_PACKS) {
+      expect(await knowledge.addPack("a", pack.items)).toBe(pack.items.length);
+      expect(await knowledge.addPack("a", pack.items)).toBe(0);
+    }
+    const items = await knowledge.list("a");
+    expect(items.filter((i) => i.kind === "note")).toHaveLength(10); // 9 shapes + tips
+    expect(items.filter((i) => i.kind === "example")).toHaveLength(9);
+    expect(items.every((i) => i.subjectId === "math")).toBe(true);
+  });
+
+  it("worked examples add up (π = 3.14)", () => {
+    const answers = KNOWLEDGE_PACKS[0].items.filter((i) => i.kind === "example").map((i) => i.answer).join("\n");
+    expect(3.14 * 5 * 5).toBeCloseTo(78.5);
+    expect(answers).toContain("78.5 cm²");
+    expect(2 * 3.14 * 2 * 5).toBeCloseTo(62.8);
+    expect(62.8 + 12.56 * 2).toBeCloseTo(87.92);
+    expect(answers).toContain("87.92 cm²");
+    expect((5 * 4 + 5 * 3 + 4 * 3) * 2).toBe(94);
   });
 });

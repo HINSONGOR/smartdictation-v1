@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import { ErrorText, TextInput } from "@/components/ui/TextInput";
 import { errorMessage, type MessageKey } from "@/lib/i18n";
 import { vocabItemsText, vocabLanguage } from "@/lib/knowledge/KnowledgeService";
+import { KNOWLEDGE_PACKS } from "@/lib/knowledge/packs";
 import type { SubjectView } from "@/lib/planner/plannerRules";
 import type { StudentSummary } from "@/lib/student/StudentService";
 import { KNOWLEDGE_KINDS, type KnowledgeItem, type KnowledgeKind } from "@/types";
@@ -230,9 +231,44 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
                 await services.knowledge.setPinned(student.id, item.id, !item.pinned);
                 await reload();
               }}
+              onDelete={async () => {
+                await services.knowledge.remove(student.id, item.id);
+                await reload();
+              }}
             />
           ))}
         </ul>
+      )}
+
+      {items && (
+        <details open={items.length === 0} className="rounded-control border border-border bg-surface p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-foreground">{t("knowledge.packs")}</summary>
+          <ul className="mt-3 space-y-2">
+            {KNOWLEDGE_PACKS.map((pack) => {
+              const have = new Set(items.map((i) => i.title));
+              const missing = pack.items.filter((i) => !have.has(i.title)).length;
+              return (
+                <li key={pack.id} className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-surface-muted p-3">
+                  <span className="min-w-0 text-sm text-foreground">
+                    {t(pack.titleKey)}
+                    <span className="block text-xs text-muted">{t(`${pack.titleKey}.desc` as MessageKey, { n: pack.items.length })}</span>
+                  </span>
+                  <Button
+                    variant="secondary"
+                    disabled={missing === 0}
+                    onClick={async () => {
+                      const added = await services.knowledge.addPack(student.id, pack.items);
+                      setNotice(t("knowledge.packAdded", { n: added }));
+                      await reload();
+                    }}
+                  >
+                    {missing === 0 ? t("knowledge.packHave") : t("knowledge.packAdd")}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       )}
     </div>
   );
@@ -246,6 +282,7 @@ function ItemCard({
   picked,
   onPick,
   onPin,
+  onDelete,
 }: {
   item: KnowledgeItem;
   subjects: SubjectView[];
@@ -254,9 +291,11 @@ function ItemCard({
   picked: boolean;
   onPick: (on: boolean) => void;
   onPin: () => void;
+  onDelete: () => void;
 }) {
   const { t } = useApp();
   const [open, setOpen] = useState(focused);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
   const ref = useRef<HTMLLIElement>(null);
   const subject = subjects.find((s) => s.id === item.subjectId);
@@ -293,16 +332,47 @@ function ItemCard({
                 {tested > 0 && ` · ${t("knowledge.score", { known: item.known ?? 0, total: tested })}`}
               </span>
             </button>
-            <button
-              type="button"
-              onClick={onPin}
-              aria-pressed={Boolean(item.pinned)}
-              aria-label={t(item.pinned ? "knowledge.unpin" : "knowledge.pin")}
-              className={`flex size-9 shrink-0 items-center justify-center rounded-full text-lg ${item.pinned ? "" : "opacity-40 grayscale"}`}
-            >
-              ⭐
-            </button>
+            <div className="flex shrink-0 items-center">
+              <button
+                type="button"
+                onClick={onPin}
+                aria-pressed={Boolean(item.pinned)}
+                aria-label={t(item.pinned ? "knowledge.unpin" : "knowledge.pin")}
+                className={`flex size-9 items-center justify-center rounded-full text-lg ${item.pinned ? "" : "opacity-40 grayscale"}`}
+              >
+                ⭐
+              </button>
+              <Link
+                href={knowledgeRoutes.edit(item.id)}
+                aria-label={t("knowledge.editItem", { title: item.title })}
+                className="flex size-9 items-center justify-center rounded-full text-muted hover:bg-surface-muted hover:text-primary"
+              >
+                ✎
+              </Link>
+              {confirmDelete ? (
+                <button type="button" onClick={onDelete} className="min-h-9 rounded-full bg-danger px-3 text-xs font-semibold text-on-primary">
+                  {t("knowledge.confirmDelete")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  aria-label={t("knowledge.deleteItem", { title: item.title })}
+                  className="flex size-9 items-center justify-center rounded-full text-muted hover:bg-surface-muted hover:text-danger"
+                >
+                  🗑
+                </button>
+              )}
+            </div>
           </div>
+          {confirmDelete && (
+            <div className="flex items-center justify-end gap-2 text-xs text-muted">
+              {t("knowledge.deleteHint")}
+              <button type="button" onClick={() => setConfirmDelete(false)} className="font-medium text-primary">
+                {t("planner.cancel")}
+              </button>
+            </div>
+          )}
 
           {open && (
             <div className="space-y-2">
@@ -334,9 +404,6 @@ function ItemCard({
                     {t("knowledge.showAnswer")}
                   </button>
                 ))}
-              <Link href={knowledgeRoutes.edit(item.id)} className="inline-block text-sm font-medium text-primary hover:underline">
-                {t("prompts.edit")}
-              </Link>
             </div>
           )}
         </div>
