@@ -111,7 +111,7 @@ export function categoryFor(task: Pick<StudentTask, "categoryId">, categories: C
  */
 export function autoDoneAt(task: StudentTask, sessions: PracticeSession[]): string | null {
   const link = task.link;
-  if (task.done || !link) return null;
+  if (task.done || !link || link.kind === "knowledge") return null; // notes are read, not practised
   const match = sessions
     .filter((s) => s.finishedAt >= task.updatedAt)
     .filter((s) =>

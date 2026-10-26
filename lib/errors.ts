@@ -43,7 +43,12 @@ export type ServiceErrorCode =
   | "prompt.titleTooLong"
   | "prompt.contentRequired"
   | "prompt.contentTooLong"
-  | "prompt.notFound";
+  | "prompt.notFound"
+  | "knowledge.titleRequired"
+  | "knowledge.tooLong"
+  | "knowledge.bodyRequired"
+  | "knowledge.answerRequired"
+  | "knowledge.notFound";
 
 export class ServiceError extends Error {
   constructor(readonly code: ServiceErrorCode) {

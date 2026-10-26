@@ -4,6 +4,7 @@
   "/prompts/edit",
   "/scan",
   "/knowledge",
+  "/knowledge/edit",
   "/planner/task",
   "/dictation",
   "/chinese",

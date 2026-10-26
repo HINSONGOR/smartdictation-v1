@@ -21,6 +21,7 @@ import type {
   PlannerSettings,
   PracticeSession,
   PromptEntry,
+  KnowledgeItem,
   StudentProfile,
   StudentTask,
 } from "@/types";
@@ -72,6 +73,14 @@ export interface TaskRepository extends StudentScopedStore {
   getForStudent(studentId: string, taskId: string): Promise<StudentTask | null>;
   save(task: StudentTask): Promise<void>;
   removeForStudent(studentId: string, taskId: string): Promise<void>;
+}
+
+/** Personal study knowledge base. Every query is scoped by studentId. */
+export interface KnowledgeRepository extends StudentScopedStore {
+  listByStudent(studentId: string): Promise<KnowledgeItem[]>;
+  getForStudent(studentId: string, id: string): Promise<KnowledgeItem | null>;
+  save(item: KnowledgeItem): Promise<void>;
+  removeForStudent(studentId: string, id: string): Promise<void>;
 }
 
 /** AI prompt library. Students see family-shared prompts plus their own. */
@@ -132,6 +141,7 @@ export interface Repositories {
   practice: PracticeRepository;
   tasks: TaskRepository;
   prompts: PromptRepository;
+  knowledge: KnowledgeRepository;
   planner: PlannerSettingsRepository;
   settings: SettingsRepository;
   backup: BackupStore;

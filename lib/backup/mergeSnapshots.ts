@@ -52,6 +52,7 @@ export function mergeSnapshots(current: LearningDataSnapshot, incoming: Learning
   const mistakes = addNew(current.mistakes, incoming.mistakes);
   const sessions = addNew(current.sessions, incoming.sessions);
   const tasks = addNew(current.tasks, incoming.tasks);
+  const knowledge = addNew(current.knowledge, incoming.knowledge);
   // Family planner options: keep this device's; take the backup's only if there are none here.
   const planner = current.planner.length ? current.planner : incoming.planner;
   const promptIds = new Set(current.prompts.map((p) => p.id));
@@ -66,6 +67,7 @@ export function mergeSnapshots(current: LearningDataSnapshot, incoming: Learning
       mistakes: mistakes.merged,
       sessions: sessions.merged,
       tasks: tasks.merged,
+      knowledge: knowledge.merged,
       planner,
       prompts: [...current.prompts, ...newPrompts],
     },
@@ -77,6 +79,7 @@ export function mergeSnapshots(current: LearningDataSnapshot, incoming: Learning
       tasks: tasks.added,
       planner: planner.length - current.planner.length,
       prompts: newPrompts.length,
+      knowledge: knowledge.added,
     },
     renamed,
   };

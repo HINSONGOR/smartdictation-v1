@@ -43,6 +43,7 @@ export function toLocalRecords(snapshot: LearningDataSnapshot, owner: OwnerProfi
   add("tasks", snapshot.tasks);
   add("planner", snapshot.planner);
   add("prompts", snapshot.prompts);
+  add("knowledge", snapshot.knowledge);
   add("owner", [owner]);
   return records;
 }
@@ -59,6 +60,7 @@ export function fromLocalRecords(records: LocalRecords, fallbackOwner: OwnerProf
       tasks: pick("tasks"),
       planner: pick("planner"),
       prompts: pick("prompts"),
+      knowledge: pick("knowledge"),
     },
     owner: pick<OwnerProfile>("owner")[0] ?? fallbackOwner,
   };

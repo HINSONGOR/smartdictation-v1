@@ -88,7 +88,7 @@ const names = async (repos: Repositories) => (await repos.students.listAll()).ma
 describe("planSync", () => {
   it("detects new, edited and deleted local records against the base", () => {
     const owner = { id: "owner", name: "Owner", pin: "0000", createdAt: T };
-    const local = toLocalRecords({ students: [student("a", "Amy"), student("b", "Ben")], lists: [], mistakes: [], sessions: [], tasks: [], planner: [], prompts: [] }, owner);
+    const local = toLocalRecords({ students: [student("a", "Amy"), student("b", "Ben")], lists: [], mistakes: [], sessions: [], tasks: [], planner: [], prompts: [], knowledge: [] }, owner);
     const base = {
       [recordKey("students", "a")]: fingerprint(student("a", "Amy")), // unchanged
       [recordKey("students", "b")]: fingerprint(student("b", "Benny")), // edited
@@ -101,7 +101,7 @@ describe("planSync", () => {
 
   it("applies remote changes unless this device changed the same record", () => {
     const owner = { id: "owner", name: "Owner", pin: "0000", createdAt: T };
-    const local = toLocalRecords({ students: [student("a", "Amy (mine)")], lists: [], mistakes: [], sessions: [], tasks: [], planner: [], prompts: [] }, owner);
+    const local = toLocalRecords({ students: [student("a", "Amy (mine)")], lists: [], mistakes: [], sessions: [], tasks: [], planner: [], prompts: [], knowledge: [] }, owner);
     const base = { [recordKey("students", "a")]: fingerprint(student("a", "Amy")), [recordKey("owner", "owner")]: fingerprint(owner) };
     const remote: RemoteRecord[] = [
       { collection: "students", id: "a", data: student("a", "Amy (theirs)"), deleted: false, modifiedAt: T, updatedAt: "t1" },

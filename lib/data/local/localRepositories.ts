@@ -8,6 +8,7 @@ import type {
   OwnerProfile,
   PlannerSettings,
   PromptEntry,
+  KnowledgeItem,
   PracticeSession,
   StudentProfile,
   StudentScoped,
@@ -21,6 +22,7 @@ import type {
   OwnerRepository,
   PlannerSettingsRepository,
   PromptRepository,
+  KnowledgeRepository,
   PracticeRepository,
   TaskRepository,
   Repositories,
@@ -48,6 +50,7 @@ const KEYS = {
   tasks: "tasks",
   planner: "planner",
   prompts: "prompts",
+  knowledge: "knowledge",
   settings: "settings",
   syncState: "sync-state",
 } as const;
@@ -191,6 +194,28 @@ class LocalTaskRepository extends LocalStudentScopedRepository<StudentTask> impl
   }
 }
 
+class LocalKnowledgeRepository extends LocalStudentScopedRepository<KnowledgeItem> implements KnowledgeRepository {
+  constructor(store: KeyValueStore) {
+    super(store, KEYS.knowledge, []);
+  }
+
+  async listByStudent(studentId: string) {
+    return this.collection.filter((k) => k.studentId === studentId);
+  }
+
+  async getForStudent(studentId: string, id: string) {
+    return this.collection.find((k) => k.studentId === studentId && k.id === id);
+  }
+
+  async save(item: KnowledgeItem) {
+    this.collection.upsert(item);
+  }
+
+  async removeForStudent(studentId: string, id: string) {
+    this.collection.removeWhere((k) => k.studentId === studentId && k.id === id);
+  }
+}
+
 class LocalPromptRepository implements PromptRepository {
   private readonly collection: LocalCollection<PromptEntry>;
 
@@ -249,6 +274,7 @@ class LocalBackupStore implements BackupStore {
       tasks: new LocalCollection<StudentTask>(this.store, KEYS.tasks, []).all(),
       planner: new LocalCollection<PlannerSettings>(this.store, KEYS.planner, []).all(),
       prompts: new LocalCollection<PromptEntry>(this.store, KEYS.prompts, []).all(),
+      knowledge: new LocalCollection<KnowledgeItem>(this.store, KEYS.knowledge, []).all(),
     };
   }
 
@@ -260,6 +286,7 @@ class LocalBackupStore implements BackupStore {
     this.store.write(KEYS.tasks, snapshot.tasks);
     this.store.write(KEYS.planner, snapshot.planner);
     this.store.write(KEYS.prompts, snapshot.prompts);
+    this.store.write(KEYS.knowledge, snapshot.knowledge);
   }
 }
 
@@ -289,6 +316,7 @@ const SYNCED_KEYS = new Set<string>([
   KEYS.tasks,
   KEYS.planner,
   KEYS.prompts,
+  KEYS.knowledge,
 ]);
 
 function createChangeFeed(store: KeyValueStore): ChangeFeed {
@@ -319,6 +347,7 @@ export function createLocalRepositories(store: KeyValueStore): Repositories {
     tasks: new LocalTaskRepository(store),
     planner: new LocalPlannerSettingsRepository(store),
     prompts: new LocalPromptRepository(store),
+    knowledge: new LocalKnowledgeRepository(store),
     backup: new LocalBackupStore(store),
     syncState: new LocalSyncStateRepository(store),
     changes: createChangeFeed(store),

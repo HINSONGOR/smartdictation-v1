@@ -50,7 +50,8 @@ export const PLANNER_SETTINGS_ID = "planner";
  */
 export type TaskLink =
   | { kind: "dictationList"; listId: string; language: DictationLanguage }
-  | { kind: "mistakeReview"; language: DictationLanguage };
+  | { kind: "mistakeReview"; language: DictationLanguage }
+  | { kind: "knowledge"; itemId: string };
 
 /** 每日 / 返學日（一至五）/ 每星期揀星期幾. */
 export type RepeatKind = "daily" | "schoolDays" | "weekly";

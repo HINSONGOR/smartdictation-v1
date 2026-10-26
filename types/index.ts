@@ -7,3 +7,4 @@ export * from "./backup";
 export * from "./settings";
 export * from "./planner";
 export * from "./prompts";
+export * from "./knowledge";

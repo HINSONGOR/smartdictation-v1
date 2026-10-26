@@ -24,9 +24,11 @@ export const plannerRoutes = {
   editTask: (id: string) => `/planner/task?id=${encodeURIComponent(id)}`,
 };
 
-/** Where opening a linked task goes (existing dictation screens). */
+/** Where opening a linked task goes (existing dictation screens, or a knowledge-base item). */
 export function linkHref(link: TaskLink): string {
-  return link.kind === "dictationList" ? dictationRoutes.practice(link.language, link.listId) : mistakeRoutes.review(link.language);
+  if (link.kind === "dictationList") return dictationRoutes.practice(link.language, link.listId);
+  if (link.kind === "mistakeReview") return mistakeRoutes.review(link.language);
+  return `/knowledge?item=${encodeURIComponent(link.itemId)}`;
 }
 
 export function categoryName(t: Translate, category: CategoryView): string {

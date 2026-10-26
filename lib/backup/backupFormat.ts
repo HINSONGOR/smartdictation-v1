@@ -17,6 +17,7 @@ export function countsOf(snapshot: LearningDataSnapshot): BackupCounts {
     tasks: snapshot.tasks.length,
     planner: snapshot.planner.length,
     prompts: snapshot.prompts.length,
+    knowledge: snapshot.knowledge.length,
   };
 }
 
@@ -84,6 +85,8 @@ const VALID = {
     typeof r.done === "boolean" &&
     isStr(r.createdAt),
   planner: (r: Rec) => isNonEmpty(r.id) && Array.isArray(r.categories) && Array.isArray(r.subjects),
+  knowledge: (r: Rec) =>
+    isNonEmpty(r.id) && isNonEmpty(r.studentId) && ["note", "example", "qa", "vocab"].includes(r.kind as string) && isStr(r.title) && isStr(r.body) && isStr(r.createdAt),
   prompts: (r: Rec) =>
     isNonEmpty(r.id) &&
     (r.ownerStudentId === null || isNonEmpty(r.ownerStudentId)) &&
@@ -94,7 +97,7 @@ const VALID = {
 } satisfies Record<keyof LearningDataSnapshot, (r: Rec) => boolean>;
 
 /** Collections added after format 1: missing in older files means "none". */
-const OPTIONAL_KEYS = new Set<keyof LearningDataSnapshot>(["tasks", "planner", "prompts"]);
+const OPTIONAL_KEYS = new Set<keyof LearningDataSnapshot>(["tasks", "planner", "prompts", "knowledge"]);
 
 /** Keep the first record per id. */
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
@@ -147,6 +150,7 @@ export function parseBackup(text: string): ParsedBackup {
     mistakes: owned(data.mistakes as LearningDataSnapshot["mistakes"]),
     sessions: owned(data.sessions as LearningDataSnapshot["sessions"]),
     tasks: owned(data.tasks as LearningDataSnapshot["tasks"]),
+    knowledge: owned(data.knowledge as LearningDataSnapshot["knowledge"]),
     planner: uniqueById(data.planner as LearningDataSnapshot["planner"]).slice(0, 1),
     // Family-shared prompts always; a student's own only with that student.
     prompts: uniqueById(data.prompts as LearningDataSnapshot["prompts"]).filter((p) => p.ownerStudentId === null || ids.has(p.ownerStudentId)),

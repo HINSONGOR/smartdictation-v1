@@ -10,31 +10,38 @@ import { ErrorText, TextInput } from "@/components/ui/TextInput";
 import { errorMessage, type MessageKey } from "@/lib/i18n";
 import { dateKey } from "@/lib/planner/plannerRules";
 import type { PlannerOptions, RepeatScope } from "@/lib/planner/PlannerService";
-import { TASK_LIMITS, type DateKey, type DictationList, type RepeatKind, type StudentTask, type TaskLink } from "@/types";
+import { TASK_LIMITS, type DateKey, type DictationList, type KnowledgeItem, type RepeatKind, type StudentTask, type TaskLink } from "@/types";
 import { COLOR_HEX, categoryName, formatDay, plannerRoutes, subjectName } from "./plannerUi";
 
 const TEXTAREA =
   "w-full rounded-control border border-border bg-surface p-3 text-base text-foreground placeholder:text-muted focus:outline-2 focus:outline-primary";
 const MINUTE_CHOICES = [10, 15, 20, 30, 45, 60];
 
-/** Link choice in the <select>: "", "list:<id>", "review:zh", "review:en". */
+/** Link choice in the <select>: "", "list:<id>", "review:zh", "review:en", "know:<id>". */
 function linkValue(link?: TaskLink): string {
   if (!link) return "";
-  return link.kind === "dictationList" ? `list:${link.listId}` : `review:${link.language}`;
+  if (link.kind === "dictationList") return `list:${link.listId}`;
+  if (link.kind === "mistakeReview") return `review:${link.language}`;
+  return `know:${link.itemId}`;
 }
 
-function parseLink(value: string, lists: DictationList[]): TaskLink | undefined {
+function parseLink(value: string, lists: DictationList[], knowledge: KnowledgeItem[]): TaskLink | undefined {
   if (value.startsWith("list:")) {
     const list = lists.find((l) => l.id === value.slice(5));
     return list ? { kind: "dictationList", listId: list.id, language: list.language } : undefined;
   }
   if (value === "review:zh" || value === "review:en") return { kind: "mistakeReview", language: value.slice(7) as "zh" | "en" };
+  if (value.startsWith("know:")) {
+    const item = knowledge.find((k) => k.id === value.slice(5));
+    return item ? { kind: "knowledge", itemId: item.id } : undefined;
+  }
   return undefined;
 }
 
 interface Loaded {
   options: PlannerOptions;
   lists: DictationList[];
+  knowledge: KnowledgeItem[];
   task: StudentTask | null;
   /** For one day of a repeating task: its template (repeat settings). */
   routine: StudentTask | null;
@@ -55,11 +62,12 @@ export function TaskEditor({ studentId, taskId, date }: { studentId: string; tas
     Promise.all([
       services.planner.options(),
       services.planner.linkableLists(studentId),
+      services.knowledge.list(studentId),
       taskId ? services.planner.getTask(studentId, taskId) : Promise.resolve(null),
-    ]).then(async ([options, lists, task]) => {
+    ]).then(async ([options, lists, knowledge, task]) => {
       if (taskId && !task) return setMissing(true);
       const routine = task?.routineId ? await services.planner.getRoutine(studentId, task.routineId) : null;
-      setLoaded({ options, lists, task, routine });
+      setLoaded({ options, lists, knowledge, task, routine });
     });
   }, [services, studentId, taskId]);
 
@@ -80,7 +88,7 @@ export function TaskEditor({ studentId, taskId, date }: { studentId: string; tas
 function TaskForm({ studentId, loaded, initialDate }: { studentId: string; loaded: Loaded; initialDate: DateKey | null }) {
   const { t, services, settings } = useApp();
   const router = useRouter();
-  const { options, lists, task, routine } = loaded;
+  const { options, lists, knowledge, task, routine } = loaded;
   const rule = routine?.repeat;
 
   const [title, setTitle] = useState(task?.title ?? "");
@@ -118,7 +126,7 @@ function TaskForm({ studentId, loaded, initialDate }: { studentId: string; loade
 
   function chooseLink(value: string) {
     setLink(value);
-    const chosen = parseLink(value, lists);
+    const chosen = parseLink(value, lists, knowledge);
     if (chosen?.kind === "dictationList") {
       const list = lists.find((l) => l.id === chosen.listId)!;
       setCategoryId("dictation");
@@ -142,7 +150,7 @@ function TaskForm({ studentId, loaded, initialDate }: { studentId: string; loade
       time: time || undefined,
       minutes: minutes ? Number(minutes) : undefined,
       notes,
-      link: parseLink(link, lists),
+      link: parseLink(link, lists, knowledge),
       repeat:
         repeatEditable && repeat !== "none"
           ? { kind: repeat, ...(repeat === "weekly" ? { weekdays } : {}), ...(repeatEnd ? { end: repeatEnd } : {}) }
@@ -316,6 +324,16 @@ function TaskForm({ studentId, loaded, initialDate }: { studentId: string; loade
               <option value="review:zh">{t("planner.titleZhReview")}</option>
               <option value="review:en">{t("planner.titleEnReview")}</option>
             </optgroup>
+            {knowledge.length > 0 && (
+              <optgroup label={t("nav.knowledge")}>
+                {knowledge.map((k) => (
+                  <option key={k.id} value={`know:${k.id}`}>
+                    {t(`knowledge.kindIcon.${k.kind}` as MessageKey)} {k.topic ? `${k.topic} · ` : ""}
+                    {k.title}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
           <p className="mt-1 text-xs text-muted">{t("planner.linkHelp")}</p>
         </div>
