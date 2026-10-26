@@ -689,6 +689,8 @@ export const en: Messages = {
   "knowledge.pack.shapes.desc": "2D and 3D formulas, rearranged formulas and tips, with a worked example per shape ({n} items)",
   "knowledge.pack.shapeCards": "🃏 Shape formula cards (Chinese)",
   "knowledge.pack.shapeCards.desc": "{n} Q&A cards to learn the formulas in review mode",
+  "knowledge.pack.displacement": "💧 Volume by displacement (Chinese)",
+  "knowledge.pack.displacement.desc": "Formulas, decision steps, question 4 and 3 worked examples (submerged / not submerged / overflow), plus cards ({n} items)",
   "knowledge.pack.tenses": "📘 English tenses notes",
   "knowledge.pack.tenses.desc": "Structure, signal words, usage and an example for 11 tenses, plus common traps ({n} notes)",
   "knowledge.pack.tenseCards": "🃏 English tenses cards",

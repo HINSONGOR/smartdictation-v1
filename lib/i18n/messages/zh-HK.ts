@@ -688,6 +688,8 @@ export const zhHK = {
   "knowledge.pack.shapes.desc": "平面同立體圖形公式、變形公式、小貼士，每種圖形附例題（共 {n} 項）",
   "knowledge.pack.shapeCards": "🃏 圖形公式記憶咭",
   "knowledge.pack.shapeCards.desc": "{n} 張問答咭，用「溫習模式」背公式",
+  "knowledge.pack.displacement": "💧 體積：排水法（水位上升）",
+  "knowledge.pack.displacement.desc": "公式、判斷流程、第④題同 3 條例題（完全浸沒／沒有完全浸沒／溢出），加記憶咭（共 {n} 項）",
   "knowledge.pack.tenses": "📘 English Tenses 時態筆記",
   "knowledge.pack.tenses.desc": "11 個時態嘅句式、關聯詞、用法同例句，加常見陷阱（共 {n} 篇）",
   "knowledge.pack.tenseCards": "🃏 English Tenses 記憶咭",

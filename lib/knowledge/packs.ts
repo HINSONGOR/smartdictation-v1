@@ -1,4 +1,5 @@
 import type { KnowledgeInput } from "@/types";
+import { DISPLACEMENT_PACK } from "./packsDisplacement";
 import { ENGLISH_TENSE_CARDS, ENGLISH_TENSE_NOTES } from "./packsEnglish";
 
 /**
@@ -8,7 +9,12 @@ import { ENGLISH_TENSE_CARDS, ENGLISH_TENSE_NOTES } from "./packsEnglish";
  */
 export interface KnowledgePack {
   id: string;
-  titleKey: "knowledge.pack.shapes" | "knowledge.pack.shapeCards" | "knowledge.pack.tenses" | "knowledge.pack.tenseCards";
+  titleKey:
+    | "knowledge.pack.shapes"
+    | "knowledge.pack.shapeCards"
+    | "knowledge.pack.displacement"
+    | "knowledge.pack.tenses"
+    | "knowledge.pack.tenseCards";
   items: KnowledgeInput[];
 }
 
@@ -125,6 +131,7 @@ const SHAPE_CARDS: KnowledgeInput[] = [
 export const KNOWLEDGE_PACKS: KnowledgePack[] = [
   { id: "shapes", titleKey: "knowledge.pack.shapes", items: SHAPES },
   { id: "shapeCards", titleKey: "knowledge.pack.shapeCards", items: SHAPE_CARDS },
+  { id: "displacement", titleKey: "knowledge.pack.displacement", items: DISPLACEMENT_PACK },
   { id: "tenses", titleKey: "knowledge.pack.tenses", items: ENGLISH_TENSE_NOTES },
   { id: "tenseCards", titleKey: "knowledge.pack.tenseCards", items: ENGLISH_TENSE_CARDS },
 ];

@@ -9,6 +9,7 @@ import { subjectsOf } from "@/lib/planner/plannerRules";
 import { parseQaResult } from "@/lib/scan/qaScan";
 import { KnowledgeService, vocabItemsText, vocabLanguage } from "./KnowledgeService";
 import { KNOWLEDGE_PACKS } from "./packs";
+import { DISPLACEMENT_PACK } from "./packsDisplacement";
 
 const codeOf = (p: Promise<unknown>) => p.then(() => null, (e: unknown) => (e instanceof ServiceError ? e.code : String(e)));
 
@@ -109,8 +110,8 @@ describe("knowledge packs", () => {
     }
     const items = await knowledge.list("a");
     const math = items.filter((i) => i.subjectId === "math");
-    expect(math.filter((i) => i.kind === "note")).toHaveLength(10); // 9 shapes + tips
-    expect(math.filter((i) => i.kind === "example")).toHaveLength(9);
+    expect(math.filter((i) => i.kind === "note")).toHaveLength(11); // 9 shapes + tips + displacement
+    expect(math.filter((i) => i.kind === "example")).toHaveLength(13); // 9 shapes + 4 displacement
     const english = items.filter((i) => i.subjectId === "english");
     expect(english.filter((i) => i.kind === "note")).toHaveLength(12); // 11 tenses + traps
     expect(english.filter((i) => i.kind === "qa")).toHaveLength(18);
@@ -125,5 +126,18 @@ describe("knowledge packs", () => {
     expect(62.8 + 12.56 * 2).toBeCloseTo(87.92);
     expect(answers).toContain("87.92 cm²");
     expect((5 * 4 + 5 * 3 + 4 * 3) * 2).toBe(94);
+  });
+
+  it("displacement examples add up", () => {
+    const answers = DISPLACEMENT_PACK.filter((i) => i.kind === "example").map((i) => i.answer).join("\n");
+    expect(8 + (240 * 2) / (20 * 20)).toBeCloseTo(9.2);
+    expect(answers).toContain("9.2 cm");
+    expect(8 + 240 / 400).toBeCloseTo(8.6);
+    expect(10 + 600 / (20 * 15)).toBe(12);
+    expect((20 * 20 * 6) / (400 - 10 * 10)).toBe(8);
+    expect(6 + 1500 / 400).toBeCloseTo(9.75);
+    expect(18 + 1000 / 400).toBeCloseTo(20.5);
+    expect(20 * 20 * 18 + 1000 - 20 * 20 * 20).toBe(200);
+    expect(answers).toContain("200 cm³");
   });
 });
