@@ -14,6 +14,8 @@ export function countsOf(snapshot: LearningDataSnapshot): BackupCounts {
     lists: snapshot.lists.length,
     mistakes: snapshot.mistakes.length,
     sessions: snapshot.sessions.length,
+    tasks: snapshot.tasks.length,
+    planner: snapshot.planner.length,
   };
 }
 
@@ -71,7 +73,20 @@ const VALID = {
     Array.isArray(r.answers) &&
     isStr(r.startedAt) &&
     isStr(r.finishedAt),
+  tasks: (r: Rec) =>
+    isNonEmpty(r.id) &&
+    isNonEmpty(r.studentId) &&
+    isStr(r.title) &&
+    isNonEmpty(r.categoryId) &&
+    isStr(r.date) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(r.date) &&
+    typeof r.done === "boolean" &&
+    isStr(r.createdAt),
+  planner: (r: Rec) => isNonEmpty(r.id) && Array.isArray(r.categories) && Array.isArray(r.subjects),
 } satisfies Record<keyof LearningDataSnapshot, (r: Rec) => boolean>;
+
+/** Collections added after format 1: missing in older files means "none". */
+const OPTIONAL_KEYS = new Set<keyof LearningDataSnapshot>(["tasks", "planner"]);
 
 /** Keep the first record per id. */
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
@@ -103,6 +118,7 @@ export function parseBackup(text: string): ParsedBackup {
 
   const data = raw.data;
   for (const key of Object.keys(VALID) as (keyof typeof VALID)[]) {
+    if (data[key] === undefined && OPTIONAL_KEYS.has(key)) data[key] = [];
     const list = data[key];
     if (!Array.isArray(list) || !list.every((r) => isRec(r) && VALID[key](r))) throw new ServiceError("backup.invalidFile");
   }
@@ -122,6 +138,8 @@ export function parseBackup(text: string): ParsedBackup {
     lists: owned(data.lists as LearningDataSnapshot["lists"]),
     mistakes: owned(data.mistakes as LearningDataSnapshot["mistakes"]),
     sessions: owned(data.sessions as LearningDataSnapshot["sessions"]),
+    tasks: owned(data.tasks as LearningDataSnapshot["tasks"]),
+    planner: uniqueById(data.planner as LearningDataSnapshot["planner"]).slice(0, 1),
   };
   return {
     file: { app: BACKUP_APP_ID, formatVersion: raw.formatVersion, exportedAt: raw.exportedAt, data: snapshot },

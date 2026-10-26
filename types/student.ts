@@ -15,6 +15,8 @@ export interface StudentProfile extends Entity {
   pin: string;
   createdAt: ISODateString;
   active: boolean;
+  /** School grade, e.g. "P6" (changed when moving up; older records are kept). */
+  grade?: string;
 }
 
 /** The parent / device owner. Can view and manage all student profiles. */
@@ -33,4 +35,6 @@ export interface StudentUpdateInput {
   name: string;
   /** New 4-digit PIN; empty / missing keeps the current PIN. */
   pin?: string;
+  /** School grade; "" clears it, missing keeps it. */
+  grade?: string;
 }

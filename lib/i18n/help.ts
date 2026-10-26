@@ -60,7 +60,7 @@ export const HELP: Record<Locale, HelpSection[]> = {
       id: "progress",
       title: "6. 學習紀錄",
       steps: [
-        "主頁「學習紀錄」卡或者學習紀錄頁，可以睇連續練習日數、正確率、最近 14 日圖表同最常錯嘅字。",
+        "「默書」頁嘅「學習紀錄」卡或者學習紀錄頁，可以睇連續練習日數、正確率、最近 14 日圖表同最常錯嘅字。",
         "家長可以喺「家長設定」撳每個學生嘅「📊 紀錄」，唔使切換學生。",
       ],
     },
@@ -135,7 +135,7 @@ export const HELP: Record<Locale, HelpSection[]> = {
       id: "progress",
       title: "6. Progress",
       steps: [
-        "The Progress card / page shows the streak, accuracy, a 14-day chart and the most missed words.",
+        "The Progress card on the Dictation page (or the Progress page) shows the streak, accuracy, a 14-day chart and the most missed words.",
         "Parents can tap “📊 Progress” for any student in Owner Settings without switching profile.",
       ],
     },

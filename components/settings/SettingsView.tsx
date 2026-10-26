@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { APP_VERSION } from "@/lib/config";
-import { Version2Card } from "@/components/dashboard/Version2Card";
 import { useApp } from "@/components/layout/AppProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { OwnerPanel } from "@/components/student/OwnerPanel";
@@ -61,8 +60,6 @@ export function SettingsView() {
           </Link>
         </Card>
       </div>
-
-      <Version2Card />
 
       <p className="text-center text-xs text-muted">{t("settings.version", { version: APP_VERSION })}</p>
     </div>

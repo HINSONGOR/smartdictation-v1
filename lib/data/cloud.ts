@@ -4,7 +4,7 @@
  */
 
 /** V1 record groups that are synced (device settings like theme are not). */
-export const SYNC_COLLECTIONS = ["students", "lists", "mistakes", "sessions", "owner"] as const;
+export const SYNC_COLLECTIONS = ["students", "lists", "mistakes", "sessions", "owner", "tasks", "planner"] as const;
 export type SyncCollection = (typeof SYNC_COLLECTIONS)[number];
 
 export interface CloudUser {

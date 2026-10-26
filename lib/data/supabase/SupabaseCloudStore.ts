@@ -52,6 +52,7 @@ function toCloudError(error: unknown): CloudError {
     PGRST205: "cloud.notSetUp", // table not found
     "42P01": "cloud.notSetUp",
     "42501": "cloud.notSetUp", // permission denied (grants missing)
+    "23514": "cloud.notSetUp", // check violation: new collection not allowed yet (run supabase/migrations)
   };
   if (map[code]) return new CloudError(map[code], message);
   if (e?.name === "AuthRetryableFetchError" || e?.status === 0 || /fetch|network/i.test(message)) {

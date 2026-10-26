@@ -1,28 +1,48 @@
 import type { ComponentType, SVGProps } from "react";
 import type { MessageKey } from "@/lib/i18n";
-import { ChartIcon, ChineseIcon, EnglishIcon, HomeIcon, MistakesIcon, SettingsIcon } from "@/components/ui/icons";
+import {
+  CameraIcon,
+  ChartIcon,
+  ChineseIcon,
+  DictationIcon,
+  EnglishIcon,
+  MistakesIcon,
+  NotebookIcon,
+  PromptIcon,
+  TasksIcon,
+} from "@/components/ui/icons";
 
 export interface NavItem {
   href: string;
   labelKey: MessageKey;
   descKey?: MessageKey;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Other path prefixes that belong to this section (for the active highlight). */
+  match?: string[];
 }
 
-export const HOME_ITEM: NavItem = { href: "/dashboard", labelKey: "nav.home", Icon: HomeIcon };
+/**
+ * The five modules — phone bottom bar and tablet / desktop top bar.
+ * Settings are reached from the student name at the top right.
+ */
+export const NAV_ITEMS: NavItem[] = [
+  { href: "/dashboard", labelKey: "nav.planner", Icon: TasksIcon, match: ["/planner"] },
+  { href: "/dictation", labelKey: "nav.dictation", Icon: DictationIcon, match: ["/chinese", "/english", "/mistakes", "/progress"] },
+  { href: "/knowledge", labelKey: "nav.knowledge", Icon: NotebookIcon },
+  { href: "/scan", labelKey: "nav.scan", Icon: CameraIcon },
+  { href: "/prompts", labelKey: "nav.prompts", Icon: PromptIcon },
+];
 
-/** The four main features, in dashboard order. */
-export const FEATURE_ITEMS: NavItem[] = [
+/** Inside the dictation module: the existing dictation features (unchanged). */
+export const DICTATION_ITEMS: NavItem[] = [
   { href: "/chinese", labelKey: "nav.chinese", descKey: "dashboard.chinese.desc", Icon: ChineseIcon },
   { href: "/english", labelKey: "nav.english", descKey: "dashboard.english.desc", Icon: EnglishIcon },
   { href: "/mistakes", labelKey: "nav.mistakes", descKey: "dashboard.mistakes.desc", Icon: MistakesIcon },
-  { href: "/settings", labelKey: "nav.settings", descKey: "dashboard.settings.desc", Icon: SettingsIcon },
+  { href: "/progress", labelKey: "nav.progress", descKey: "dashboard.progress.desc", Icon: ChartIcon },
 ];
 
-export const PROGRESS_ITEM: NavItem = { href: "/progress", labelKey: "nav.progress", Icon: ChartIcon };
+const under = (pathname: string, href: string) => pathname === href || pathname.startsWith(href + "/");
 
-/** Mobile bottom bar (5 slots — progress is reached from the dashboard card). */
-export const NAV_ITEMS: NavItem[] = [HOME_ITEM, ...FEATURE_ITEMS];
-
-/** Desktop / tablet top bar has room for progress too. */
-export const DESKTOP_NAV_ITEMS: NavItem[] = [HOME_ITEM, ...FEATURE_ITEMS.slice(0, 3), PROGRESS_ITEM, FEATURE_ITEMS[3]];
+export function isNavActive(pathname: string, item: NavItem): boolean {
+  return [item.href, ...(item.match ?? [])].some((href) => under(pathname, href));
+}

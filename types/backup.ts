@@ -1,6 +1,7 @@
 import type { ISODateString } from "./common";
 import type { DictationList } from "./dictation";
 import type { MistakeRecord } from "./mistake";
+import type { PlannerSettings, StudentTask } from "./planner";
 import type { PracticeSession } from "./practice";
 import type { StudentProfile } from "./student";
 
@@ -10,10 +11,15 @@ export interface LearningDataSnapshot {
   lists: DictationList[];
   mistakes: MistakeRecord[];
   sessions: PracticeSession[];
+  /** Management-centre tasks (format 2+; older backups have none). */
+  tasks: StudentTask[];
+  /** Family planner options: 0 or 1 record. */
+  planner: PlannerSettings[];
 }
 
 export const BACKUP_APP_ID = "SmartDictation";
-export const BACKUP_FORMAT_VERSION = 1;
+/** 2: adds tasks + planner. Format 1 files still import (with no tasks). */
+export const BACKUP_FORMAT_VERSION = 2;
 
 /** The JSON file written by "export" and read by "import". */
 export interface BackupFile {

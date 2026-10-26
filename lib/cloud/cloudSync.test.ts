@@ -87,7 +87,7 @@ const names = async (repos: Repositories) => (await repos.students.listAll()).ma
 describe("planSync", () => {
   it("detects new, edited and deleted local records against the base", () => {
     const owner = { id: "owner", name: "Owner", pin: "0000", createdAt: T };
-    const local = toLocalRecords({ students: [student("a", "Amy"), student("b", "Ben")], lists: [], mistakes: [], sessions: [] }, owner);
+    const local = toLocalRecords({ students: [student("a", "Amy"), student("b", "Ben")], lists: [], mistakes: [], sessions: [], tasks: [], planner: [] }, owner);
     const base = {
       [recordKey("students", "a")]: fingerprint(student("a", "Amy")), // unchanged
       [recordKey("students", "b")]: fingerprint(student("b", "Benny")), // edited
@@ -100,7 +100,7 @@ describe("planSync", () => {
 
   it("applies remote changes unless this device changed the same record", () => {
     const owner = { id: "owner", name: "Owner", pin: "0000", createdAt: T };
-    const local = toLocalRecords({ students: [student("a", "Amy (mine)")], lists: [], mistakes: [], sessions: [] }, owner);
+    const local = toLocalRecords({ students: [student("a", "Amy (mine)")], lists: [], mistakes: [], sessions: [], tasks: [], planner: [] }, owner);
     const base = { [recordKey("students", "a")]: fingerprint(student("a", "Amy")), [recordKey("owner", "owner")]: fingerprint(owner) };
     const remote: RemoteRecord[] = [
       { collection: "students", id: "a", data: student("a", "Amy (theirs)"), deleted: false, modifiedAt: T, updatedAt: "t1" },
@@ -216,6 +216,40 @@ describe("CloudSyncService (two devices)", () => {
     await new Promise((r) => setTimeout(r, 3300));
     expect([...cloud.rows.values()].some((r) => r.collection === "students" && r.id === "a")).toBe(true);
   }, 10_000);
+
+  it("syncs management-centre tasks and family categories between devices", async () => {
+    const ipad = device(cloud);
+    await ipad.repos.students.save(student("a", "小明"));
+    await ipad.repos.tasks.save({
+      id: "t1", studentId: "a", title: "交回條", categoryId: "notice", date: "2026-11-03", done: false,
+      schoolYear: "2026-27", createdAt: T, updatedAt: T,
+    });
+    await ipad.repos.planner.save({ id: "planner", categories: [{ id: "c1", name: "興趣班", icon: "🎹", color: "pink" }], subjects: [], updatedAt: T });
+    await ipad.sync.signUp("Mum-Family", "pw123456");
+
+    const phone = device(cloud);
+    await phone.sync.signIn("Mum-Family", "pw123456");
+    expect((await phone.repos.tasks.listByStudent("a")).map((t) => t.title)).toEqual(["交回條"]);
+    expect((await phone.repos.planner.get())?.categories[0].name).toBe("興趣班");
+
+    await phone.repos.tasks.save({ ...(await phone.repos.tasks.getForStudent("a", "t1"))!, done: true });
+    await phone.sync.syncNow();
+    await ipad.sync.syncNow();
+    expect((await ipad.repos.tasks.getForStudent("a", "t1"))?.done).toBe(true);
+  });
+
+  it("leaves cloud rows of unknown (newer) collections alone", async () => {
+    const ipad = device(cloud);
+    await ipad.sync.signUp("Mum-Family", "pw123456");
+    const id = [...cloud.accounts.values()][0].id;
+    cloud.rows.set(`${id}/future/x`, {
+      familyId: id, collection: "future" as never, id: "x", data: { a: 1 }, deleted: false, modifiedAt: T, updatedAt: "t999999",
+    });
+    await ipad.sync.syncNow();
+    await ipad.repos.students.save(student("a", "小明"));
+    await ipad.sync.syncNow();
+    expect(cloud.rows.get(`${id}/future/x`)?.deleted).toBe(false);
+  });
 
   it("keeps a local save made while a sync is downloading", async () => {
     const ipad = device(cloud);

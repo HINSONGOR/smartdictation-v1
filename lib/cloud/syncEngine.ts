@@ -1,4 +1,4 @@
-import type { OutgoingRecord, RemoteRecord, SyncCollection } from "@/lib/data/cloud";
+import { SYNC_COLLECTIONS, type OutgoingRecord, type RemoteRecord, type SyncCollection } from "@/lib/data/cloud";
 import type { LearningDataSnapshot, OwnerProfile } from "@/types";
 
 /** Everything that syncs, keyed "collection/id". */
@@ -40,6 +40,8 @@ export function toLocalRecords(snapshot: LearningDataSnapshot, owner: OwnerProfi
   add("lists", snapshot.lists);
   add("mistakes", snapshot.mistakes);
   add("sessions", snapshot.sessions);
+  add("tasks", snapshot.tasks);
+  add("planner", snapshot.planner);
   add("owner", [owner]);
   return records;
 }
@@ -53,6 +55,8 @@ export function fromLocalRecords(records: LocalRecords, fallbackOwner: OwnerProf
       lists: pick("lists"),
       mistakes: pick("mistakes"),
       sessions: pick("sessions"),
+      tasks: pick("tasks"),
+      planner: pick("planner"),
     },
     owner: pick<OwnerProfile>("owner")[0] ?? fallbackOwner,
   };
@@ -91,9 +95,11 @@ export function planSync(
   }
   for (const key of Object.keys(base)) if (!local.has(key)) changed.add(key);
 
-  // Latest row per key (rows arrive oldest first).
+  // Latest row per key (rows arrive oldest first). Rows of collections this version doesn't know
+  // (added by a newer app version) are left alone: never stored here, so never deleted from the cloud.
+  const known = new Set<string>(SYNC_COLLECTIONS);
   const latest = new Map<string, RemoteRecord>();
-  for (const row of remote) latest.set(recordKey(row.collection, row.id), row);
+  for (const row of remote) if (known.has(row.collection)) latest.set(recordKey(row.collection, row.id), row);
 
   const merged: LocalRecords = new Map(local);
   const nextBase: SyncBase = { ...base };

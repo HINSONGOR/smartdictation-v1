@@ -18,6 +18,7 @@ export interface StudentDataStores {
   lists: StudentScopedStore;
   mistakes: StudentScopedStore;
   sessions: StudentScopedStore;
+  tasks: StudentScopedStore;
 }
 
 export type StudentDataSummary = Record<keyof StudentDataStores, number>;
@@ -25,8 +26,8 @@ export type StudentDataSummary = Record<keyof StudentDataStores, number>;
 const PIN_PATTERN = /^\d{4}$/;
 
 function toSummary(student: StudentProfile): StudentSummary {
-  const { id, name, createdAt, active } = student;
-  return { id, name, createdAt, active };
+  const { id, name, createdAt, active, grade } = student;
+  return grade ? { id, name, createdAt, active, grade } : { id, name, createdAt, active };
 }
 
 function sameName(a: string, b: string) {
@@ -124,6 +125,10 @@ export class StudentService {
     if (!PIN_PATTERN.test(pin)) throw new ServiceError("student.pinInvalid");
 
     const updated: StudentProfile = { ...student, name, pin };
+    if (input.grade !== undefined) {
+      if (input.grade) updated.grade = input.grade;
+      else delete updated.grade;
+    }
     await this.students.save(updated);
     return toSummary(updated);
   }
@@ -137,12 +142,13 @@ export class StudentService {
 
   /** How much learning data a student has (shown before deleting). */
   async dataSummary(studentId: string): Promise<StudentDataSummary> {
-    const [lists, mistakes, sessions] = await Promise.all([
+    const [lists, mistakes, sessions, tasks] = await Promise.all([
       this.studentData.lists.countForStudent(studentId),
       this.studentData.mistakes.countForStudent(studentId),
       this.studentData.sessions.countForStudent(studentId),
+      this.studentData.tasks.countForStudent(studentId),
     ]);
-    return { lists, mistakes, sessions };
+    return { lists, mistakes, sessions, tasks };
   }
 
   /** Permanently delete a student and all of their learning data. Other students are untouched. */

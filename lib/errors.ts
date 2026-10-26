@@ -25,7 +25,18 @@ export type ServiceErrorCode =
   | "dictation.paragraphsRequired"
   | "dictation.tooManyParagraphs"
   | "dictation.paragraphTooLong"
-  | "dictation.notFound";
+  | "dictation.notFound"
+  | "task.titleRequired"
+  | "task.titleTooLong"
+  | "task.dateInvalid"
+  | "task.categoryInvalid"
+  | "task.minutesInvalid"
+  | "task.notesTooLong"
+  | "task.notFound"
+  | "planner.nameRequired"
+  | "planner.nameTooLong"
+  | "planner.nameTaken"
+  | "planner.limitReached";
 
 export class ServiceError extends Error {
   constructor(readonly code: ServiceErrorCode) {

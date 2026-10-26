@@ -109,3 +109,71 @@ export function SparkIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Checklist — student management centre. */
+export function TasksIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 6.5 5.5 8 8 5.5M4 12.5 5.5 14 8 11.5M4 18.5 5.5 20 8 17.5" />
+      <path d="M11 7h9M11 13h9M11 19h9" />
+    </Svg>
+  );
+}
+
+/** Pencil on paper — dictation. */
+export function DictationIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 4h9l5 5v11H5z" />
+      <path d="M14 4v5h5" />
+      <path d="m9 16 5-5 1.5 1.5-5 5H9z" />
+    </Svg>
+  );
+}
+
+/** Notebook — knowledge base. */
+export function NotebookIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M6 3h12v18H6z" />
+      <path d="M4 7h3M4 12h3M4 17h3M10 8h5M10 12h5" />
+    </Svg>
+  );
+}
+
+/** Camera — photo document scan. */
+export function CameraIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </Svg>
+  );
+}
+
+/** Chat bubble with spark — AI prompts. */
+export function PromptIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 5h16v11H9l-5 4z" />
+      <path d="M12 7.5v5M9.5 10h5" />
+    </Svg>
+  );
+}
+
+export function CalendarIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 6h16v14H4z" />
+      <path d="M4 10h16M8 3v5M16 3v5" />
+    </Svg>
+  );
+}
+
+export function CloudIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 10.5 3.75 3.75 0 0 0 7 18z" />
+    </Svg>
+  );
+}

@@ -1,19 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { BackupReminderCard } from "@/components/backup/BackupReminderCard";
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/layout/AppProvider";
-import { FEATURE_ITEMS } from "@/components/layout/navItems";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { DICTATION_ITEMS } from "@/components/layout/navItems";
 import { mistakeRoutes } from "@/components/mistakes/routes";
 import { ProgressSummaryCard } from "@/components/stats/ProgressSummaryCard";
-import { Mascot } from "@/components/theme/Mascot";
-import { THEME_PRESETS } from "@/lib/theme";
-import { Version2Card } from "./Version2Card";
 
-export function DashboardHome() {
-  const { t, currentStudent, settings, services } = useApp();
-  const mascot = THEME_PRESETS[settings.theme].mascot;
+/** 默書 module: entry cards to the existing dictation features (the features themselves are unchanged). */
+export function DictationHome() {
+  const { t, currentStudent, services } = useApp();
   const [pending, setPending] = useState<{ studentId: string; count: number } | null>(null);
 
   useEffect(() => {
@@ -25,43 +22,12 @@ export function DashboardHome() {
   // Ignore a count that belongs to a previously selected student.
   const pendingCount = pending && pending.studentId === currentStudent?.id ? pending.count : 0;
 
-  const greeting = (
-    <>
-      <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-        {currentStudent ? t("dashboard.greeting", { name: currentStudent.name }) : t("dashboard.greetingNoStudent")}
-      </h1>
-      {currentStudent && mascot && <p className="mt-1 text-sm text-muted sm:text-base">{t(`mascot.cheer.${mascot}`)}</p>}
-      {!currentStudent && (
-        <p className="mt-2 text-sm text-muted">
-          {t("dashboard.noStudentHint")}{" "}
-          <Link href="/settings" className="font-medium text-primary underline-offset-2 hover:underline">
-            {t("dashboard.goToSettings")}
-          </Link>
-        </p>
-      )}
-    </>
-  );
-
   return (
     <div className="space-y-6">
-      {mascot ? (
-        <section className="flex items-end gap-3">
-          <Mascot id={mascot} size={96} className="size-20 shrink-0 sm:size-24" />
-          {/* Speech bubble */}
-          <div className="relative min-w-0 flex-1 rounded-card border border-border bg-surface p-4 shadow-card">
-            <span
-              aria-hidden="true"
-              className="absolute bottom-5 -left-2 size-4 rotate-45 border-b border-l border-border bg-surface"
-            />
-            {greeting}
-          </div>
-        </section>
-      ) : (
-        <section>{greeting}</section>
-      )}
+      <PageHeader title={t("nav.dictation")} />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {FEATURE_ITEMS.map(({ href, labelKey, descKey, Icon }) => (
+        {DICTATION_ITEMS.map(({ href, labelKey, descKey, Icon }) => (
           <Link
             key={href}
             href={href}
@@ -84,10 +50,6 @@ export function DashboardHome() {
       </section>
 
       {currentStudent && <ProgressSummaryCard key={currentStudent.id} studentId={currentStudent.id} />}
-
-      <BackupReminderCard />
-
-      <Version2Card />
     </div>
   );
 }

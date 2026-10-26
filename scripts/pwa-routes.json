@@ -1,5 +1,10 @@
 [
   "/dashboard",
+  "/prompts",
+  "/scan",
+  "/knowledge",
+  "/planner/task",
+  "/dictation",
   "/chinese",
   "/chinese/new",
   "/chinese/edit",

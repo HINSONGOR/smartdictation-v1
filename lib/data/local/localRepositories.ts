@@ -6,9 +6,11 @@ import type {
   LearningDataSnapshot,
   MistakeRecord,
   OwnerProfile,
+  PlannerSettings,
   PracticeSession,
   StudentProfile,
   StudentScoped,
+  StudentTask,
 } from "@/types";
 import { DEFAULT_SETTINGS } from "@/types";
 import type {
@@ -16,7 +18,9 @@ import type {
   ContentRepository,
   MistakeRepository,
   OwnerRepository,
+  PlannerSettingsRepository,
   PracticeRepository,
+  TaskRepository,
   Repositories,
   SettingsRepository,
   StudentRepository,
@@ -39,6 +43,8 @@ const KEYS = {
   content: "dictation-lists",
   mistakes: "mistakes",
   practice: "practice-sessions",
+  tasks: "tasks",
+  planner: "planner",
   settings: "settings",
   syncState: "sync-state",
 } as const;
@@ -160,6 +166,40 @@ class LocalPracticeRepository extends LocalStudentScopedRepository<PracticeSessi
   }
 }
 
+class LocalTaskRepository extends LocalStudentScopedRepository<StudentTask> implements TaskRepository {
+  constructor(store: KeyValueStore) {
+    super(store, KEYS.tasks, []);
+  }
+
+  async listByStudent(studentId: string) {
+    return this.collection.filter((t) => t.studentId === studentId);
+  }
+
+  async getForStudent(studentId: string, taskId: string) {
+    return this.collection.find((t) => t.studentId === studentId && t.id === taskId);
+  }
+
+  async save(task: StudentTask) {
+    this.collection.upsert(task);
+  }
+
+  async removeForStudent(studentId: string, taskId: string) {
+    this.collection.removeWhere((t) => t.studentId === studentId && t.id === taskId);
+  }
+}
+
+class LocalPlannerSettingsRepository implements PlannerSettingsRepository {
+  constructor(private readonly store: KeyValueStore) {}
+
+  async get() {
+    return this.store.read<PlannerSettings[]>(KEYS.planner)?.[0] ?? null;
+  }
+
+  async save(settings: PlannerSettings) {
+    this.store.write(KEYS.planner, [settings]);
+  }
+}
+
 /** Reads / swaps every learning-data collection at once (same storage keys as the repositories above). */
 class LocalBackupStore implements BackupStore {
   constructor(private readonly store: KeyValueStore) {}
@@ -170,6 +210,8 @@ class LocalBackupStore implements BackupStore {
       lists: new LocalCollection(this.store, KEYS.content, seedDictationLists as DictationList[]).all(),
       mistakes: new LocalCollection(this.store, KEYS.mistakes, seedMistakes as MistakeRecord[]).all(),
       sessions: new LocalCollection(this.store, KEYS.practice, seedPracticeSessions as PracticeSession[]).all(),
+      tasks: new LocalCollection<StudentTask>(this.store, KEYS.tasks, []).all(),
+      planner: new LocalCollection<PlannerSettings>(this.store, KEYS.planner, []).all(),
     };
   }
 
@@ -178,6 +220,8 @@ class LocalBackupStore implements BackupStore {
     this.store.write(KEYS.content, snapshot.lists);
     this.store.write(KEYS.mistakes, snapshot.mistakes);
     this.store.write(KEYS.practice, snapshot.sessions);
+    this.store.write(KEYS.tasks, snapshot.tasks);
+    this.store.write(KEYS.planner, snapshot.planner);
   }
 }
 
@@ -198,7 +242,15 @@ class LocalSyncStateRepository implements SyncStateRepository {
 }
 
 /** Learning-data keys whose changes should be synced (not settings / sync bookkeeping). */
-const SYNCED_KEYS = new Set<string>([KEYS.students, KEYS.owner, KEYS.content, KEYS.mistakes, KEYS.practice]);
+const SYNCED_KEYS = new Set<string>([
+  KEYS.students,
+  KEYS.owner,
+  KEYS.content,
+  KEYS.mistakes,
+  KEYS.practice,
+  KEYS.tasks,
+  KEYS.planner,
+]);
 
 function createChangeFeed(store: KeyValueStore): ChangeFeed {
   return {
@@ -225,6 +277,8 @@ export function createLocalRepositories(store: KeyValueStore): Repositories {
     content: new LocalContentRepository(store),
     mistakes: new LocalMistakeRepository(store),
     practice: new LocalPracticeRepository(store),
+    tasks: new LocalTaskRepository(store),
+    planner: new LocalPlannerSettingsRepository(store),
     backup: new LocalBackupStore(store),
     syncState: new LocalSyncStateRepository(store),
     changes: createChangeFeed(store),

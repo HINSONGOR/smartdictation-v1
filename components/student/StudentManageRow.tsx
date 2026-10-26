@@ -5,9 +5,9 @@ import { useApp } from "@/components/layout/AppProvider";
 import { StudentStatsInline } from "@/components/stats/StudentStatsInline";
 import { Button } from "@/components/ui/Button";
 import { ErrorText, PinInput, TextInput } from "@/components/ui/TextInput";
-import { errorMessage } from "@/lib/i18n";
+import { errorMessage, type MessageKey } from "@/lib/i18n";
 import type { StudentDataSummary, StudentSummary } from "@/lib/student/StudentService";
-import { STUDENT_NAME_MAX_LENGTH } from "@/types";
+import { SCHOOL_GRADES, STUDENT_NAME_MAX_LENGTH } from "@/types";
 
 type Mode = { kind: "view" } | { kind: "edit" } | { kind: "delete"; summary: StudentDataSummary | null };
 
@@ -23,6 +23,7 @@ export function StudentManageRow({
   const [mode, setMode] = useState<Mode>({ kind: "view" });
   const [name, setName] = useState(student.name);
   const [pin, setPin] = useState("");
+  const [grade, setGrade] = useState(student.grade ?? "");
   const [understood, setUnderstood] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -33,6 +34,7 @@ export function StudentManageRow({
   function openEdit() {
     setName(student.name);
     setPin("");
+    setGrade(student.grade ?? "");
     setError(null);
     setMode({ kind: "edit" });
   }
@@ -49,7 +51,7 @@ export function StudentManageRow({
     event.preventDefault();
     setBusy(true);
     try {
-      await services.students.update(student.id, { name, pin });
+      await services.students.update(student.id, { name, pin, grade });
       setMode({ kind: "view" });
       await onChanged(t("owner.saved"));
     } catch (err) {
@@ -79,7 +81,10 @@ export function StudentManageRow({
     <li className="space-y-3 px-3 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="min-w-0 flex-1 basis-40">
-          <p className="truncate font-medium text-foreground">{student.name}</p>
+          <p className="truncate font-medium text-foreground">
+            {student.name}
+            {student.grade && <span className="ml-2 text-xs font-normal text-muted">{t(`grade.${student.grade}` as MessageKey)}</span>}
+          </p>
           <p className="text-xs text-muted">
             {t("owner.createdAt", { date: dateFormat.format(new Date(student.createdAt)) })} ·{" "}
             <span className={student.active ? "text-success" : "text-muted"}>
@@ -135,7 +140,21 @@ export function StudentManageRow({
               aria-label={t("owner.newPinOptional")}
               placeholder={t("owner.newPinOptional")}
             />
+            <select
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              aria-label={t("owner.grade")}
+              className="min-h-11 rounded-control border border-border bg-surface px-3 text-base text-foreground sm:col-span-2"
+            >
+              <option value="">{t("owner.gradeNone")}</option>
+              {SCHOOL_GRADES.map((g) => (
+                <option key={g} value={g}>
+                  {t(`grade.${g}` as MessageKey)}
+                </option>
+              ))}
+            </select>
           </div>
+          <p className="text-xs text-muted">{t("owner.gradeHelp")}</p>
           <ErrorText>{error}</ErrorText>
           <div className="flex gap-2">
             <Button type="submit" disabled={busy || !name.trim() || (pin.length > 0 && pin.length !== 4)}>

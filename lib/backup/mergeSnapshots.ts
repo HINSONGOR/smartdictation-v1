@@ -51,14 +51,19 @@ export function mergeSnapshots(current: LearningDataSnapshot, incoming: Learning
   const lists = addNew(current.lists, incoming.lists);
   const mistakes = addNew(current.mistakes, incoming.mistakes);
   const sessions = addNew(current.sessions, incoming.sessions);
+  const tasks = addNew(current.tasks, incoming.tasks);
+  // Family planner options: keep this device's; take the backup's only if there are none here.
+  const planner = current.planner.length ? current.planner : incoming.planner;
 
   return {
-    snapshot: { students, lists: lists.merged, mistakes: mistakes.merged, sessions: sessions.merged },
+    snapshot: { students, lists: lists.merged, mistakes: mistakes.merged, sessions: sessions.merged, tasks: tasks.merged, planner },
     added: {
       students: students.length - current.students.length,
       lists: lists.added,
       mistakes: mistakes.added,
       sessions: sessions.added,
+      tasks: tasks.added,
+      planner: planner.length - current.planner.length,
     },
     renamed,
   };

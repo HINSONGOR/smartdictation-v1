@@ -5,11 +5,8 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { ThemeMascot } from "@/components/theme/Mascot";
 import { useApp } from "./AppProvider";
-import { DESKTOP_NAV_ITEMS, NAV_ITEMS } from "./navItems";
-
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(href + "/");
-}
+import { CloudStatusButton } from "./CloudStatusButton";
+import { NAV_ITEMS, isNavActive } from "./navItems";
 
 /**
  * Mobile-first shell:
@@ -36,27 +33,30 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
 
           <nav className="hidden flex-1 items-center gap-1 md:flex" aria-label={t("a11y.mainNav")}>
-            {DESKTOP_NAV_ITEMS.map(({ href, labelKey }) => (
+            {NAV_ITEMS.map((item) => (
               <Link
-                key={href}
-                href={href}
-                aria-current={isActive(pathname, href) ? "page" : undefined}
+                key={item.href}
+                href={item.href}
+                aria-current={isNavActive(pathname, item) ? "page" : undefined}
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive(pathname, href) ? "bg-primary-soft text-primary" : "text-muted hover:text-foreground"
+                  isNavActive(pathname, item) ? "bg-primary-soft text-primary" : "text-muted hover:text-foreground"
                 }`}
               >
-                {t(labelKey)}
+                {t(item.labelKey)}
               </Link>
             ))}
           </nav>
 
-          <Link
-            href="/settings"
-            className="ml-auto max-w-[45%] truncate rounded-full bg-primary-soft px-3 py-1 text-sm text-foreground md:ml-0"
-            title={t("student.current")}
-          >
-            {currentStudent?.name ?? t("student.none")}
-          </Link>
+          <div className="ml-auto flex min-w-0 items-center gap-1 md:ml-0">
+            <CloudStatusButton />
+            <Link
+              href="/settings"
+              className="max-w-[40vw] truncate rounded-full bg-primary-soft px-3 py-1 text-sm text-foreground md:max-w-48"
+              title={t("student.current")}
+            >
+              {currentStudent?.name ?? t("student.none")}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -69,8 +69,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         aria-label={t("a11y.mainNav")}
       >
         <ul className="grid grid-cols-5">
-          {NAV_ITEMS.map(({ href, labelKey, Icon }) => {
-            const active = isActive(pathname, href);
+          {NAV_ITEMS.map((item) => {
+            const { href, labelKey, Icon } = item;
+            const active = isNavActive(pathname, item);
             return (
               <li key={href}>
                 <Link

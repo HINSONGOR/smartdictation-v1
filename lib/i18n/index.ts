@@ -1,6 +1,6 @@
 import { CloudError } from "@/lib/data/cloud";
 import { ServiceError } from "@/lib/errors";
-import { DICTATION_LIMITS, MAX_STUDENTS, STUDENT_NAME_MAX_LENGTH, type Locale } from "@/types";
+import { DICTATION_LIMITS, MAX_STUDENTS, STUDENT_NAME_MAX_LENGTH, TASK_LIMITS, type Locale } from "@/types";
 import { en } from "./messages/en";
 import { zhHK, type MessageKey, type Messages } from "./messages/zh-HK";
 
@@ -49,6 +49,11 @@ const ERROR_VARS: TranslateVars = {
   itemMax: DICTATION_LIMITS.itemMaxLength,
   maxParagraphs: DICTATION_LIMITS.maxParagraphs,
   paragraphMax: DICTATION_LIMITS.paragraphMaxLength,
+  taskTitleMax: TASK_LIMITS.titleMaxLength,
+  notesMax: TASK_LIMITS.notesMaxLength,
+  maxMinutes: TASK_LIMITS.maxMinutes,
+  plannerNameMax: TASK_LIMITS.categoryNameMaxLength,
+  plannerMax: TASK_LIMITS.maxCustomCategories,
 };
 
 /** Map any thrown error to a localized message. */

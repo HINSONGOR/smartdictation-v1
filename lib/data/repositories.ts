@@ -18,8 +18,10 @@ import type {
   LearningDataSnapshot,
   MistakeRecord,
   OwnerProfile,
+  PlannerSettings,
   PracticeSession,
   StudentProfile,
+  StudentTask,
 } from "@/types";
 
 export interface StudentRepository {
@@ -61,6 +63,20 @@ export interface MistakeRepository extends StudentScopedStore {
 export interface PracticeRepository extends StudentScopedStore {
   listByStudent(studentId: string, language?: DictationLanguage): Promise<PracticeSession[]>;
   save(session: PracticeSession): Promise<void>;
+}
+
+/** Management-centre tasks. Every query is scoped by studentId. */
+export interface TaskRepository extends StudentScopedStore {
+  listByStudent(studentId: string): Promise<StudentTask[]>;
+  getForStudent(studentId: string, taskId: string): Promise<StudentTask | null>;
+  save(task: StudentTask): Promise<void>;
+  removeForStudent(studentId: string, taskId: string): Promise<void>;
+}
+
+/** Family-wide planner options (custom categories / subjects). */
+export interface PlannerSettingsRepository {
+  get(): Promise<PlannerSettings | null>;
+  save(settings: PlannerSettings): Promise<void>;
 }
 
 /**
@@ -105,6 +121,8 @@ export interface Repositories {
   content: ContentRepository;
   mistakes: MistakeRepository;
   practice: PracticeRepository;
+  tasks: TaskRepository;
+  planner: PlannerSettingsRepository;
   settings: SettingsRepository;
   backup: BackupStore;
   syncState: SyncStateRepository;

@@ -22,7 +22,7 @@ const session = (id: string, studentId: string) => ({
 });
 
 function snapshot(patch: Partial<LearningDataSnapshot> = {}): LearningDataSnapshot {
-  return { students: [], lists: [], mistakes: [], sessions: [], ...patch };
+  return { students: [], lists: [], mistakes: [], sessions: [], tasks: [], planner: [], ...patch };
 }
 
 function codeOf(fn: () => unknown) {
@@ -48,6 +48,20 @@ describe("parseBackup", () => {
     expect(codeOf(() => parseBackup(fileText({ students: [] })))).toBe("backup.invalidFile"); // missing collections
   });
 
+  it("still reads format-1 files (no tasks) and keeps tasks of format-2 files", () => {
+    const v1 = { students: [student("a", "Amy")], lists: [], mistakes: [], sessions: [] };
+    expect(parseBackup(fileText(v1)).file.data.tasks).toEqual([]);
+    const task = {
+      id: "t1", studentId: "a", title: "交回條", categoryId: "notice", date: "2026-11-03", done: false,
+      schoolYear: "2026-27", createdAt: NOW, updatedAt: NOW,
+    };
+    const parsed = parseBackup(fileText(snapshot({ students: [student("a", "Amy")], tasks: [task] }), { formatVersion: 2 }));
+    expect(parsed.file.data.tasks).toEqual([task]);
+    expect(codeOf(() => parseBackup(fileText(snapshot({ tasks: [{ ...task, date: "3/11" }] }), { formatVersion: 2 })))).toBe(
+      "backup.invalidFile",
+    );
+  });
+
   it("rejects more than the student limit", () => {
     const students = Array.from({ length: MAX_STUDENTS + 1 }, (_, i) => student(`s${i}`, `S${i}`));
     expect(codeOf(() => parseBackup(fileText(snapshot({ students }))))).toBe("backup.tooManyStudents");
@@ -57,7 +71,7 @@ describe("parseBackup", () => {
     const parsed = parseBackup(
       fileText(snapshot({ students: [student("a", "Amy")], lists: [list("l1", "a"), list("l2", "ghost")], sessions: [session("x", "ghost")] })),
     );
-    expect(parsed.counts).toEqual({ students: 1, lists: 1, mistakes: 0, sessions: 0 });
+    expect(parsed.counts).toEqual({ students: 1, lists: 1, mistakes: 0, sessions: 0, tasks: 0, planner: 0 });
     expect(parsed.orphansDropped).toBe(2);
   });
 });
@@ -73,7 +87,7 @@ describe("mergeSnapshots", () => {
     const { snapshot: merged, added, renamed } = mergeSnapshots(current, incoming);
     expect(merged.students.map((s) => s.name)).toEqual(["Amy", "Ben"]);
     expect(merged.lists.find((l) => l.id === "l1")?.title).toBe("T-l1"); // this device's version wins
-    expect(added).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 0 });
+    expect(added).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 0, tasks: 0, planner: 0 });
     expect(renamed).toEqual([]);
   });
 
@@ -112,7 +126,7 @@ describe("BackupService", () => {
     const backup = await service.createBackup(new Date(2026, 9, 4, 15, 30));
     expect(backup.fileName).toBe(backupFileName(new Date(2026, 9, 4, 15, 30)));
     expect(backup.fileName).toBe("smartdictation-backup-20261004-1530.json");
-    expect(backup.counts).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 1 });
+    expect(backup.counts).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 1, tasks: 0, planner: 0 });
     expect(backup.json).not.toContain("9999");
     expect(await service.lastBackupAt()).toBe(new Date(2026, 9, 4, 15, 30).toISOString());
   });
@@ -128,7 +142,7 @@ describe("BackupService", () => {
     const otherService = new BackupService(other.backup, other.settings);
 
     const result = await otherService.importBackup(otherService.readBackup(json), "replace");
-    expect(result.counts).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 1 });
+    expect(result.counts).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 1, tasks: 0, planner: 0 });
     expect((await other.students.listAll()).map((s) => s.name)).toEqual(["Amy"]);
     expect(await other.content.listByStudent("a")).toHaveLength(1);
     expect((await other.owner.get()).pin).toBe("4321"); // owner PIN untouched
@@ -145,12 +159,12 @@ describe("BackupService", () => {
     const otherService = new BackupService(other.backup, other.settings);
 
     const result = await otherService.importBackup(otherService.readBackup(json), "merge");
-    expect(result.counts).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 1 });
+    expect(result.counts).toEqual({ students: 1, lists: 1, mistakes: 1, sessions: 1, tasks: 0, planner: 0 });
     expect((await other.students.listAll()).map((s) => s.name)).toEqual(["Zoe", "Amy"]);
     expect((await other.settings.get()).currentStudentId).toBe("z");
 
     // Importing the same file again adds nothing.
     const again = await otherService.importBackup(otherService.readBackup(json), "merge");
-    expect(again.counts).toEqual({ students: 0, lists: 0, mistakes: 0, sessions: 0 });
+    expect(again.counts).toEqual({ students: 0, lists: 0, mistakes: 0, sessions: 0, tasks: 0, planner: 0 });
   });
 });
