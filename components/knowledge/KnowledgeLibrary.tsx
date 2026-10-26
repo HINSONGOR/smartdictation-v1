@@ -16,6 +16,7 @@ import type { SubjectView } from "@/lib/planner/plannerRules";
 import type { StudentSummary } from "@/lib/student/StudentService";
 import { KNOWLEDGE_KINDS, type KnowledgeItem, type KnowledgeKind } from "@/types";
 import { KIND_ICON, REVIEWABLE, knowledgeRoutes } from "./knowledgeUi";
+import { QaScanPanel } from "./QaScanPanel";
 import { ReviewDeck } from "./ReviewDeck";
 
 /** 個人溫習知識庫: notes, worked examples, Q&A and vocabulary by subject; review mode; words → dictation list. */
@@ -28,6 +29,8 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
   const [kind, setKind] = useState<KnowledgeKind | "">("");
   const [query, setQuery] = useState("");
   const [reviewing, setReviewing] = useState<KnowledgeItem[] | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [listTitle, setListTitle] = useState("");
@@ -70,6 +73,21 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
     }
   }
 
+  if (scanning) {
+    return (
+      <QaScanPanel
+        studentId={student.id}
+        subjects={subjects}
+        onDone={(added) => {
+          setScanning(false);
+          setNotice(added ? t("knowledge.scanAdded", { n: added }) : null);
+          if (added) setKind("qa");
+          void reload();
+        }}
+      />
+    );
+  }
+
   if (reviewing) {
     return (
       <ReviewDeck
@@ -87,13 +105,24 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-2">
         <PageHeader title={t("nav.knowledge")}>{t("knowledge.intro")}</PageHeader>
-        <Link
-          href={knowledgeRoutes.create(kind || undefined)}
-          className="inline-flex min-h-11 shrink-0 items-center rounded-control bg-primary px-3 text-sm font-medium text-on-primary hover:bg-primary-hover"
-        >
-          {t("knowledge.add")}
-        </Link>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+          <Link
+            href={knowledgeRoutes.create(kind || undefined)}
+            className="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-3 text-sm font-medium text-on-primary hover:bg-primary-hover"
+          >
+            {t("knowledge.add")}
+          </Link>
+          <Button variant="secondary" onClick={() => setScanning(true)}>
+            {t("knowledge.scanButton")}
+          </Button>
+        </div>
       </div>
+
+      {notice && (
+        <p role="status" className="rounded-control bg-surface-muted p-2 text-sm text-success">
+          {notice}
+        </p>
+      )}
 
       {items && items.length > 0 && (
         <Card className="space-y-3">
@@ -288,7 +317,12 @@ function ItemCard({
               {hasAnswer &&
                 (showAnswer ? (
                   <div className="rounded-control bg-surface-muted p-3">
-                    <p className="mb-1 text-xs font-medium text-muted">{t("practice.answer")}</p>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-muted">{t("practice.answer")}</p>
+                      <button type="button" onClick={() => setShowAnswer(false)} className="text-xs font-medium text-primary">
+                        {t("knowledge.hideAnswer")}
+                      </button>
+                    </div>
                     <p className="text-sm whitespace-pre-line text-foreground">{item.answer}</p>
                   </div>
                 ) : (

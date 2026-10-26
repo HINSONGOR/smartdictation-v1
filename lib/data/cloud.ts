@@ -63,7 +63,7 @@ export interface CloudStore {
 }
 
 /** What a photo is expected to contain. */
-export type OcrTarget = "words" | "passage" | "events";
+export type OcrTarget = "words" | "passage" | "events" | "qa";
 
 export interface OcrRequest {
   /** Base64 image data (no data: prefix). */

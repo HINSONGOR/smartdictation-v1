@@ -1,5 +1,5 @@
 import type { CloudSyncService } from "@/lib/cloud/CloudSyncService";
-import { CloudError, type OcrEngine, type OcrTarget } from "@/lib/data";
+import { CloudError, type OcrEngine } from "@/lib/data";
 import type { DictationLanguage } from "@/types";
 
 export type { OcrTarget } from "@/lib/data";
@@ -32,7 +32,7 @@ function stripPinyin(line: string): string {
 }
 
 /** Tidy the recognised text for the editor (it is always checked by a parent before saving). */
-export function cleanOcrText(text: string, target: Exclude<OcrTarget, "events">, language: DictationLanguage = "en"): string {
+export function cleanOcrText(text: string, target: "words" | "passage", language: DictationLanguage = "en"): string {
   const lines = text
     .replace(/\r\n?/g, "\n")
     .split("\n")
@@ -64,13 +64,19 @@ export class OcrService {
     return this.cloud.getStatus().state === "signedIn";
   }
 
+  /** Q&A revision worksheet photo → the AI's JSON answer (parse with lib/scan/qaScan). */
+  async readQa(photo: Photo, language: DictationLanguage): Promise<string> {
+    if (!this.isAvailable()) throw new CloudError("cloud.signInRequired");
+    return this.engine.recognize({ image: photo.data, mimeType: photo.mimeType, language, target: "qa" });
+  }
+
   /** School notice / timetable photo → the AI's JSON answer (parse with lib/scan/scanItems). */
   async readEvents(photo: Photo, language: DictationLanguage, today: string): Promise<string> {
     if (!this.isAvailable()) throw new CloudError("cloud.signInRequired");
     return this.engine.recognize({ image: photo.data, mimeType: photo.mimeType, language, target: "events", today });
   }
 
-  async read(photo: Photo, language: DictationLanguage, target: Exclude<OcrTarget, "events">): Promise<string> {
+  async read(photo: Photo, language: DictationLanguage, target: "words" | "passage"): Promise<string> {
     if (!this.isAvailable()) throw new CloudError("cloud.signInRequired");
     const text = await this.engine.recognize({ image: photo.data, mimeType: photo.mimeType, language, target });
     return cleanOcrText(text, target, language);

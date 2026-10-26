@@ -18,8 +18,25 @@ const CORS = {
 };
 
 type Language = "zh" | "en";
-type Target = "words" | "passage" | "events";
-const TARGETS: Target[] = ["words", "passage", "events"];
+type Target = "words" | "passage" | "events" | "qa";
+const TARGETS: Target[] = ["words", "passage", "events", "qa"];
+
+/** Question-and-answer revision worksheet → JSON list of question / answer pairs. */
+function qaPrompt(): string {
+  return [
+    "You read photos of Hong Kong school revision worksheets that list questions with their model answers.",
+    "Transcribe exactly as printed (Traditional Chinese stays Traditional; keep full-width punctuation). Do not correct, summarise or answer anything yourself.",
+    "Return JSON only, in this shape:",
+    '{"subject":string or null,"topic":string or null,"items":[{"question":string,"answer":string}]}',
+    "Rules:",
+    "- subject: the subject named on the sheet (e.g. 常識, 人文科, 中文, English, 數學), else null.",
+    "- topic: the lesson / unit heading, e.g. \"第四課 中國近年的發展\", else null.",
+    "- One item per numbered question. Leave out the number (\"1.\"), and join lines of one answer that were only wrapped by the page width.",
+    "- If a question has no printed answer, use an empty string for answer.",
+    "- Leave out the school name, term, name / class / date fields and instructions.",
+    '- If no questions are found, return {"subject":null,"topic":null,"items":[]}.',
+  ].join("\n");
+}
 
 /** School notice / exam timetable / dictation scope → JSON list of dated items. */
 function eventsPrompt(today: string): string {
@@ -95,9 +112,9 @@ Deno.serve(async (req) => {
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
-  const instructions = target === "events" ? eventsPrompt(today!) : prompt(language!, target!);
+  const instructions = target === "events" ? eventsPrompt(today!) : target === "qa" ? qaPrompt() : prompt(language!, target!);
   const contents = [{ parts: [{ text: instructions }, { inline_data: { mime_type: mimeType, data: image } }] }];
-  const base = target === "events" ? { temperature: 0, responseMimeType: "application/json" } : { temperature: 0 };
+  const base = target === "events" || target === "qa" ? { temperature: 0, responseMimeType: "application/json" } : { temperature: 0 };
   // Reading text needs little "thinking"; low thinking answers much faster.
   const fast = JSON.stringify({ contents, generationConfig: { ...base, thinkingConfig: { thinkingLevel: "low" } } });
   const plain = JSON.stringify({ contents, generationConfig: base });

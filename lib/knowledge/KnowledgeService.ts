@@ -33,6 +33,16 @@ export class KnowledgeService {
     return item;
   }
 
+  /** Add several items (e.g. from a scanned worksheet). All are checked before any is saved. */
+  async createMany(studentId: string, inputs: KnowledgeInput[]): Promise<KnowledgeItem[]> {
+    const clean = inputs.map((input) => this.validate(input));
+    const now = nowIso();
+    const schoolYear = schoolYearOf(dateKey(new Date()));
+    const items = clean.map((c) => ({ id: createId(), studentId, ...c, schoolYear, createdAt: now, updatedAt: now }));
+    for (const item of items) await this.items.save(item);
+    return items;
+  }
+
   async update(studentId: string, id: string, input: KnowledgeInput): Promise<KnowledgeItem> {
     const item = await this.require(studentId, id);
     const { subjectId: _s, topic: _t, answer: _a, examples: _e, pinned: _p, ...kept } = item;

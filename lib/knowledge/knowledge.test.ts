@@ -5,6 +5,8 @@ import { createLocalRepositories } from "@/lib/data/local/localRepositories";
 import { DictationService, parseItems } from "@/lib/dictation/DictationService";
 import { ServiceError } from "@/lib/errors";
 import type { KnowledgeInput } from "@/types";
+import { subjectsOf } from "@/lib/planner/plannerRules";
+import { parseQaResult } from "@/lib/scan/qaScan";
 import { KnowledgeService, vocabItemsText, vocabLanguage } from "./KnowledgeService";
 
 const codeOf = (p: Promise<unknown>) => p.then(() => null, (e: unknown) => (e instanceof ServiceError ? e.code : String(e)));
@@ -63,5 +65,35 @@ describe("KnowledgeService", () => {
     expect(parseItems(itemsText)).toEqual([{ text: "apple", hint: "蘋果" }, { text: "banana" }]);
     const list = await new DictationService(repos.content).create("a", "en", { type: "words", title: "Unit 2 生字", itemsText, paragraphs: [] });
     expect(list.items.map((i) => i.text)).toEqual(["apple", "banana"]);
+  });
+});
+
+describe("scanned Q&A worksheet", () => {
+  const subjects = subjectsOf(null);
+  const names = (s: (typeof subjects)[number]) => ({ chinese: ["中文"], english: ["英文"], math: ["數學"], gs: ["常識"] })[s.id as "gs"] ?? [];
+
+  it("reads questions and answers, strips numbering, maps 人文科 to General Studies", () => {
+    const answer =
+      '```json\n{"subject":"人文科","topic":"第四課 中國近年的發展","items":[' +
+      '{"question":"1. 中國近年的科技發展有甚麼成果？","answer":"中國近年致力發展創新科技，這不但改善人民的生活，促進經濟發展，而且對推動人類社會進步作出貢獻。"},' +
+      '{"question":"2. 中國和國際間保持緊密的合作關係，對中國有甚麼影響？","answer":"除了有助提升國際地位，也對中國整體長遠發展有着深遠的影響。"},' +
+      '{"question":"","answer":"x"}]}\n```';
+    const result = parseQaResult(answer, subjects, names)!;
+    expect(result.subjectId).toBe("gs");
+    expect(result.topic).toBe("第四課 中國近年的發展");
+    expect(result.items.map((i) => i.question)).toEqual(["中國近年的科技發展有甚麼成果？", "中國和國際間保持緊密的合作關係，對中國有甚麼影響？"]);
+    expect(result.items[0].answer).toContain("致力發展創新科技");
+    expect(parseQaResult("not json", subjects, names)).toBeNull();
+  });
+
+  it("adds all checked pairs as Q&A cards at once", async () => {
+    const repos = createLocalRepositories(new MemoryStore());
+    const knowledge = new KnowledgeService(repos.knowledge);
+    expect(await codeOf(knowledge.createMany("a", [{ kind: "qa", title: "Q1", body: "", answer: "A1" }, { kind: "qa", title: "Q2", body: "", answer: "" }]))).toBe(
+      "knowledge.answerRequired",
+    );
+    expect(await knowledge.list("a")).toEqual([]); // nothing saved
+    const added = await knowledge.createMany("a", [{ kind: "qa", title: "Q1", body: "", answer: "A1", topic: "第四課", subjectId: "gs" }]);
+    expect(added[0]).toMatchObject({ kind: "qa", title: "Q1", answer: "A1", topic: "第四課", subjectId: "gs" });
   });
 });

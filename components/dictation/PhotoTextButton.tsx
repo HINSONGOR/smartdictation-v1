@@ -5,7 +5,6 @@ import { useApp } from "@/components/layout/AppProvider";
 import { Button } from "@/components/ui/Button";
 import { ErrorText } from "@/components/ui/TextInput";
 import { errorMessage } from "@/lib/i18n";
-import type { OcrTarget } from "@/lib/ocr/OcrService";
 import { photoFromFile } from "@/lib/ocr/photo";
 import type { DictationLanguage } from "@/types";
 
@@ -19,7 +18,7 @@ export function PhotoTextButton({
   onText,
 }: {
   language: DictationLanguage;
-  target: Exclude<OcrTarget, "events">;
+  target: "words" | "passage";
   onText: (text: string) => string | void;
 }) {
   const { t, services } = useApp();
