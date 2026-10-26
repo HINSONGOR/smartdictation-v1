@@ -64,6 +64,8 @@ export interface StudentTask extends Entity, StudentScoped {
   minutes?: number;
   notes?: string;
   link?: TaskLink;
+  /** Revision task planned for this exam task (id). */
+  examId?: string;
   done: boolean;
   doneAt?: ISODateString;
   /** Hong Kong school year the task belongs to, e.g. "2026-27". */
@@ -83,6 +85,10 @@ export interface TaskInput {
   minutes?: number;
   notes?: string;
   link?: TaskLink;
+  /** createMany only: a name for this new task, so others in the same batch can point at it. */
+  ref?: string;
+  /** createMany only: this is a revision task for the batch task with this ref. */
+  examRef?: string;
 }
 
 export const TASK_LIMITS = {

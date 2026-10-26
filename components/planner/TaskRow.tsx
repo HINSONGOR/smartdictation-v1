@@ -17,19 +17,26 @@ export function TaskRow({
   options,
   showDate = false,
   overdue = false,
+  examTitle,
   onToggle,
 }: {
   task: StudentTask;
   options: PlannerOptions;
   showDate?: boolean;
   overdue?: boolean;
+  /** For revision tasks: the exam they prepare for. */
+  examTitle?: string;
   onToggle: (task: StudentTask) => void;
 }) {
   const { t, settings } = useApp();
   const category = categoryFor(task, options.categories);
   const subject = options.subjects.find((s) => s.id === task.subjectId);
+  const doneAt =
+    task.done && task.doneAt
+      ? new Intl.DateTimeFormat(settings.locale, { hour: "numeric", minute: "2-digit" }).format(new Date(task.doneAt))
+      : null;
   const details = [
-    categoryName(t, category),
+    examTitle ? `📝 ${examTitle}` : categoryName(t, category),
     subject && subjectName(t, subject),
     showDate && formatDay(task.date, settings.locale),
     task.time,
@@ -65,6 +72,7 @@ export function TaskRow({
         </span>
         <span className={`block truncate text-xs ${overdue ? "text-danger" : "text-muted"}`}>
           {overdue && `${t("planner.overdue")} · `}
+          {doneAt && <span className="font-medium text-success">{t("planner.doneAt", { time: doneAt })} · </span>}
           {details.join(" · ")}
         </span>
       </Link>

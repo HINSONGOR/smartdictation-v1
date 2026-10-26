@@ -6,17 +6,29 @@ import { BackupReminderCard } from "@/components/backup/BackupReminderCard";
 import { useApp } from "@/components/layout/AppProvider";
 import { Mascot, ThemeMascot } from "@/components/theme/Mascot";
 import { Card } from "@/components/ui/Card";
-import { CalendarIcon, TasksIcon } from "@/components/ui/icons";
-import { categoryFor, dateKey, todayView } from "@/lib/planner/plannerRules";
+import { CalendarIcon, ExamIcon, TasksIcon } from "@/components/ui/icons";
+import {
+  addDays,
+  categoryFor,
+  checkInStreak,
+  dateKey,
+  dayStatus,
+  examsView,
+  parseDateKey,
+  todayView,
+  lastDays,
+  type DayStatus,
+  type ExamCard,
+} from "@/lib/planner/plannerRules";
 import type { StudentSummary } from "@/lib/student/StudentService";
 import { THEME_PRESETS } from "@/lib/theme";
 import type { DateKey, StudentTask } from "@/types";
 import { MonthCalendar } from "./MonthCalendar";
-import { categoryName, formatDay, plannerRoutes } from "./plannerUi";
+import { COLOR_HEX, categoryName, formatDay, plannerRoutes, subjectName } from "./plannerUi";
 import { TaskRow } from "./TaskRow";
 import { usePlanner, type PlannerData } from "./usePlanner";
 
-type View = "today" | "calendar";
+type View = "today" | "exams" | "calendar";
 const VIEW_KEY = "sd:v1:planner-view";
 
 /** 學生管理中心 — the app's home: today's tasks, countdowns, progress and a calendar. */
@@ -68,7 +80,8 @@ function StudentPlanner({ student }: { student: StudentSummary }) {
   // The chosen view is remembered on this device (rendered client-side only, after the app loads).
   const [view, setView] = useState<View>(() => {
     try {
-      return localStorage.getItem(VIEW_KEY) === "calendar" ? "calendar" : "today";
+      const saved = localStorage.getItem(VIEW_KEY);
+      return saved === "calendar" || saved === "exams" ? saved : "today";
     } catch {
       return "today";
     }
@@ -98,10 +111,11 @@ function StudentPlanner({ student }: { student: StudentSummary }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <div className="grid flex-1 grid-cols-2 gap-1 rounded-control bg-surface-muted p-1" role="tablist" aria-label={t("planner.view")}>
+        <div className="grid flex-1 grid-cols-3 gap-1 rounded-control bg-surface-muted p-1" role="tablist" aria-label={t("planner.view")}>
           {(
             [
               ["today", t("planner.viewToday"), TasksIcon],
+              ["exams", t("planner.viewExams"), ExamIcon],
               ["calendar", t("planner.viewCalendar"), CalendarIcon],
             ] as const
           ).map(([value, label, Icon]) => (
@@ -122,9 +136,13 @@ function StudentPlanner({ student }: { student: StudentSummary }) {
         </div>
         <Link
           href={plannerRoutes.newTask(today)}
-          className="inline-flex min-h-11 shrink-0 items-center rounded-control bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
+          aria-label={t("planner.addTask")}
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control bg-primary px-3 text-sm font-medium text-on-primary hover:bg-primary-hover"
         >
-          {t("planner.addTask")}
+          <span aria-hidden="true" className="text-lg leading-none">
+            ＋
+          </span>
+          <span className="ml-1 hidden sm:inline">{t("planner.addTaskShort")}</span>
         </Link>
       </div>
 
@@ -132,6 +150,8 @@ function StudentPlanner({ student }: { student: StudentSummary }) {
         <p className="text-sm text-muted">{t("app.loading")}</p>
       ) : view === "today" ? (
         <TodayPanel data={data} today={today} onToggle={toggle} />
+      ) : view === "exams" ? (
+        <ExamsPanel data={data} today={today} onToggle={toggle} />
       ) : (
         <CalendarPanel data={data} today={today} onToggle={toggle} />
       )}
@@ -140,7 +160,7 @@ function StudentPlanner({ student }: { student: StudentSummary }) {
 }
 
 function TodayPanel({ data, today, onToggle }: { data: PlannerData; today: DateKey; onToggle: (task: StudentTask) => void }) {
-  const { t } = useApp();
+  const { t, settings } = useApp();
   const view = todayView(data.tasks, today);
   const remaining = view.total - view.done;
   const allDone = view.total > 0 && remaining === 0;
@@ -152,11 +172,24 @@ function TodayPanel({ data, today, onToggle }: { data: PlannerData; today: DateK
         : view.done >= 2
           ? t("planner.takeBreak")
           : t("planner.keepGoing", { n: remaining });
-  const todo = view.today.filter((task) => !task.done);
-  const doneToday = view.today.filter((task) => task.done);
+  // Undone first, then done (with their check-in time).
+  const todays = [...view.today.filter((task) => !task.done), ...view.today.filter((task) => task.done)];
+  const tomorrow = data.tasks.filter((task) => task.date === addDays(today, 1));
+  const streak = checkInStreak(data.tasks, today);
+  const examTitles = examTitleMap(data.tasks);
 
   return (
     <div className="space-y-4">
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold text-foreground">{formatDay(today, settings.locale)}</h2>
+          <span className="rounded-full bg-primary-soft px-3 py-1 text-sm font-semibold text-foreground">
+            {streak > 0 ? t("planner.streak", { n: streak }) : t("planner.streakNone")}
+          </span>
+        </div>
+        <WeekStrip tasks={data.tasks} today={today} />
+      </Card>
+
       {view.countdowns.length > 0 && (
         <ul className="space-y-2" aria-label={t("planner.countdowns")}>
           {view.countdowns.map(({ task, days }) => (
@@ -198,35 +231,167 @@ function TodayPanel({ data, today, onToggle }: { data: PlannerData; today: DateK
         <p className={`text-sm ${allDone ? "font-semibold text-success" : "text-muted"}`}>{message}</p>
       </Card>
 
+      {todays.length > 0 && (
+        <Section title={t("planner.todayList")}>
+          {todays.map((task) => (
+            <TaskRow key={task.id} task={task} options={data.options} examTitle={examTitles.get(task.examId ?? "")} onToggle={onToggle} />
+          ))}
+        </Section>
+      )}
+
       {view.overdue.length > 0 && (
         <Section title={t("planner.overdueTitle")} tone="danger">
           {view.overdue.map((task) => (
-            <TaskRow key={task.id} task={task} options={data.options} showDate overdue onToggle={onToggle} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              options={data.options}
+              showDate
+              overdue
+              examTitle={examTitles.get(task.examId ?? "")}
+              onToggle={onToggle}
+            />
           ))}
         </Section>
       )}
 
-      {(todo.length > 0 || view.upcoming.length > 0) && (
-        <Section title={t("planner.nextUp")}>
-          {todo.map((task) => (
-            <TaskRow key={task.id} task={task} options={data.options} onToggle={onToggle} />
-          ))}
-          {view.upcoming.map((task) => (
-            <TaskRow key={task.id} task={task} options={data.options} showDate onToggle={onToggle} />
-          ))}
-        </Section>
-      )}
-
-      {doneToday.length > 0 && (
-        <Section title={t("planner.doneToday")}>
-          {doneToday.map((task) => (
-            <TaskRow key={task.id} task={task} options={data.options} onToggle={onToggle} />
-          ))}
-        </Section>
+      {tomorrow.length > 0 && (
+        <details className="group rounded-control border border-border bg-surface p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-foreground">
+            {t("planner.tomorrowPreview", { n: tomorrow.length })}
+          </summary>
+          <ul className="mt-3 space-y-2">
+            {tomorrow.map((task) => (
+              <TaskRow key={task.id} task={task} options={data.options} examTitle={examTitles.get(task.examId ?? "")} onToggle={onToggle} />
+            ))}
+          </ul>
+        </details>
       )}
 
       {data.tasks.length === 0 && <EmptyHint />}
     </div>
+  );
+}
+
+/** id → title of exams, for showing which exam a revision task belongs to. */
+function examTitleMap(tasks: StudentTask[]): Map<string, string> {
+  return new Map(tasks.filter((t) => t.categoryId === "exam" || t.categoryId === "dictation").map((t) => [t.id, t.title]));
+}
+
+const STATUS_MARK: Record<DayStatus, string> = { all: "✅", some: "⭕", none: "❌", empty: "·", future: "·" };
+
+/** The last 7 days (today on the right): which days were fully checked in. */
+function WeekStrip({ tasks, today }: { tasks: StudentTask[]; today: DateKey }) {
+  const { t, settings } = useApp();
+  return (
+    <ol className="grid grid-cols-7 gap-1 text-center" aria-label={t("planner.thisWeek")}>
+      {lastDays(today, 7).map((day) => {
+        const status = dayStatus(tasks, day, today);
+        return (
+          <li
+            key={day}
+            className={`flex flex-col items-center gap-0.5 rounded-control py-1 ${day === today ? "bg-primary-soft" : ""}`}
+            aria-label={`${formatDay(day, settings.locale)}: ${t(`planner.day.${status}`)}`}
+          >
+            <span className="text-xs text-muted" aria-hidden="true">
+              {new Intl.DateTimeFormat(settings.locale, { weekday: "narrow" }).format(parseDateKey(day))}
+            </span>
+            <span aria-hidden="true" className={`text-lg leading-none ${status === "empty" || status === "future" ? "text-muted" : ""}`}>
+              {STATUS_MARK[status]}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** Upcoming exams / dictations as cards with countdown, scope and revision progress. */
+function ExamsPanel({ data, today, onToggle }: { data: PlannerData; today: DateKey; onToggle: (task: StudentTask) => void }) {
+  const { t } = useApp();
+  const { upcoming, past } = examsView(data.tasks, today);
+
+  return (
+    <div className="space-y-4">
+      {upcoming.length === 0 ? (
+        <Card className="space-y-1 text-center">
+          <p className="text-3xl" aria-hidden="true">
+            📝
+          </p>
+          <p className="font-medium text-foreground">{t("planner.noExams")}</p>
+          <p className="text-sm text-muted">{t("planner.noExamsHint")}</p>
+        </Card>
+      ) : (
+        <ul className="space-y-3">
+          {upcoming.map((card) => (
+            <ExamCardView key={card.exam.id} card={card} data={data} today={today} onToggle={onToggle} />
+          ))}
+        </ul>
+      )}
+
+      {past.length > 0 && (
+        <details className="rounded-control border border-border bg-surface p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-foreground">{t("planner.pastExams", { n: past.length })}</summary>
+          <ul className="mt-3 space-y-3">
+            {past.map((card) => (
+              <ExamCardView key={card.exam.id} card={card} data={data} today={today} onToggle={onToggle} />
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function ExamCardView({ card, data, today, onToggle }: { card: ExamCard; data: PlannerData; today: DateKey; onToggle: (task: StudentTask) => void }) {
+  const { t, settings } = useApp();
+  const [open, setOpen] = useState(false);
+  const { exam, days, revision, revisionDone } = card;
+  const category = categoryFor(exam, data.options.categories);
+  const subject = data.options.subjects.find((s) => s.id === exam.subjectId);
+  const countdown =
+    days < 0 ? t("planner.examDone") : days === 0 ? t("planner.countdownToday") : days === 1 ? t("planner.countdownTomorrow") : t("planner.countdownDays", { n: days });
+  const soon = days >= 0 && days <= 7;
+
+  return (
+    <li className={`overflow-hidden rounded-card border bg-surface shadow-card ${soon ? "border-reveal border-2" : "border-border"}`}>
+      <div className="flex">
+        <span aria-hidden="true" className="w-1.5 shrink-0" style={{ backgroundColor: COLOR_HEX[subject?.color ?? category.color] }} />
+        <div className="min-w-0 flex-1 space-y-2 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <Link href={plannerRoutes.editTask(exam.id)} className="min-w-0 font-semibold text-foreground hover:underline">
+              <span aria-hidden="true">{category.icon} </span>
+              {exam.title}
+            </Link>
+            <span className={`shrink-0 text-sm font-bold ${soon ? "text-foreground" : "text-muted"}`}>{countdown}</span>
+          </div>
+          <p className="text-xs text-muted">
+            {[formatDay(exam.date, settings.locale), exam.time, subject && subjectName(t, subject)].filter(Boolean).join(" · ")}
+          </p>
+          {exam.notes && <p className="text-sm whitespace-pre-line text-foreground">{exam.notes}</p>}
+          {revision.length > 0 && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted">
+                <span>{t("planner.revisionProgress", { done: revisionDone, total: revision.length })}</span>
+                <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="font-medium text-primary">
+                  {t(open ? "planner.hideRevision" : "planner.showRevision")}
+                </button>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${(revisionDone / revision.length) * 100}%` }} />
+              </div>
+              {open && (
+                <ul className="space-y-2 pt-2">
+                  {revision.map((task) => (
+                    <TaskRow key={task.id} task={task} options={data.options} showDate overdue={!task.done && task.date < today} onToggle={onToggle} />
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </li>
   );
 }
 

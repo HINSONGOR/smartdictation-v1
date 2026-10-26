@@ -74,15 +74,21 @@ export class PlannerService {
     const clean = [];
     for (const input of inputs) clean.push(await this.validate(input));
     const now = nowIso();
-    const tasks: StudentTask[] = clean.map((c) => ({
-      id: createId(),
-      studentId,
-      ...c,
-      done: false,
-      schoolYear: schoolYearOf(c.date),
-      createdAt: now,
-      updatedAt: now,
-    }));
+    const ids = inputs.map(() => createId());
+    const idByRef = new Map(inputs.flatMap((input, i) => (input.ref ? [[input.ref, ids[i]] as const] : [])));
+    const tasks: StudentTask[] = clean.map((c, i) => {
+      const examId = inputs[i].examRef ? idByRef.get(inputs[i].examRef!) : undefined;
+      return {
+        id: ids[i],
+        studentId,
+        ...c,
+        ...(examId ? { examId } : {}),
+        done: false,
+        schoolYear: schoolYearOf(c.date),
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
     for (const task of tasks) await this.tasks.save(task);
     return tasks;
   }

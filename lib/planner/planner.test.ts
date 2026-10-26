@@ -5,7 +5,7 @@ import { createLocalRepositories } from "@/lib/data/local/localRepositories";
 import { ServiceError } from "@/lib/errors";
 import type { PracticeSession, StudentTask } from "@/types";
 import { PlannerService } from "./PlannerService";
-import { addDays, autoDoneAt, categoriesOf, daysBetween, isDateKey, monthGrid, schoolYearOf, todayView } from "./plannerRules";
+import { addDays, autoDoneAt, categoriesOf, checkInStreak, dayStatus, daysBetween, examsView, isDateKey, lastDays, monthGrid, schoolYearOf, todayView, weekOf } from "./plannerRules";
 
 const T = "2026-10-26T00:00:00.000Z";
 const task = (patch: Partial<StudentTask>): StudentTask => ({
@@ -54,6 +54,37 @@ describe("plannerRules", () => {
     expect(view.upcoming.map((t) => t.id)).toEqual(["exam"]);
   });
 
+  it("computes day status, the week and the check-in streak (days without tasks are skipped)", () => {
+    const tasks = [
+      task({ id: "1", date: "2026-10-20", done: true }), // Tue: all
+      task({ id: "2", date: "2026-10-22", done: true }), // Thu: all (Wed empty)
+      task({ id: "3", date: "2026-10-23", done: true }), // Fri: all
+      task({ id: "4", date: "2026-10-26", done: true }), // Mon (today): some
+      task({ id: "5", date: "2026-10-26" }),
+      task({ id: "6", date: "2026-10-27" }),
+    ];
+    expect(lastDays("2026-10-28", 7)).toEqual(["2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28"]);
+    expect(weekOf("2026-10-28")[0]).toBe("2026-10-26");
+    expect(weekOf("2026-10-28")[6]).toBe("2026-11-01");
+    expect(["2026-10-21", "2026-10-22", "2026-10-26", "2026-10-27"].map((d) => dayStatus(tasks, d, "2026-10-26"))).toEqual([
+      "empty", "all", "some", "future",
+    ]);
+    expect(checkInStreak(tasks, "2026-10-26")).toBe(3); // today not finished yet: doesn't break it
+    expect(checkInStreak([...tasks.slice(0, 4), { ...tasks[4], done: true }], "2026-10-26")).toBe(4);
+    expect(checkInStreak([task({ date: "2026-10-25" })], "2026-10-26")).toBe(0);
+  });
+
+  it("lists exams with their revision progress", () => {
+    const exam = task({ id: "e", categoryId: "exam", date: "2026-11-03" });
+    const old = task({ id: "o", categoryId: "dictation", date: "2026-10-20" });
+    const view = examsView(
+      [exam, old, task({ id: "r1", categoryId: "revision", examId: "e", done: true }), task({ id: "r2", categoryId: "revision", examId: "e" }), task({ id: "h" })],
+      "2026-10-26",
+    );
+    expect(view.upcoming.map((c) => [c.exam.id, c.days, c.revisionDone, c.revision.length])).toEqual([["e", 8, 1, 2]]);
+    expect(view.past.map((c) => c.exam.id)).toEqual(["o"]);
+  });
+
   it("marks a linked task done only by practice after the task was last changed", () => {
     const at = "2026-10-26T08:00:00.000Z";
     const linked = task({ link: { kind: "dictationList", listId: "L1", language: "en" }, createdAt: at, updatedAt: at });
@@ -94,8 +125,15 @@ describe("PlannerService", () => {
     const ok = { title: "交回條", categoryId: "notice", date: "2026-11-07" };
     expect(await codeOf(planner.createMany("a", [ok, { ...ok, date: "bad" }]))).toBe("task.dateInvalid");
     expect(await planner.listTasks("a")).toEqual([]);
-    expect(await planner.createMany("a", [ok, { ...ok, title: "中文測驗", categoryId: "exam" }])).toHaveLength(2);
-    expect(await planner.listTasks("a")).toHaveLength(2);
+    const [notice, exam, revision] = await planner.createMany("a", [
+      ok,
+      { ...ok, title: "中文測驗", categoryId: "exam", ref: "e1" },
+      { ...ok, title: "溫習：第3課", categoryId: "revision", examRef: "e1" },
+    ]);
+    expect(await planner.listTasks("a")).toHaveLength(3);
+    expect(revision.examId).toBe(exam.id);
+    expect(notice.examId).toBeUndefined();
+    expect("ref" in exam || "examRef" in revision).toBe(false); // batch names are not stored
   });
 
   it("validates input", async () => {

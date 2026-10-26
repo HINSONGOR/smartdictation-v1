@@ -89,14 +89,13 @@ export function ScanPage({ student }: { student: StudentSummary }) {
         date: row.date,
         time: row.time,
         notes: notesFor(row, (parts) => t("scan.scopeNote", { parts })),
+        ref: row.key,
       });
       if (row.plan && row.categoryId === "exam") {
         for (const day of planRevision(row.date, row.scope, today, row.planDays)) {
           inputs.push({
-            title: t("scan.revisionTitle", { topics: day.topics.length ? day.topics.join("、") : t("scan.revisionAll"), exam: row.title }).slice(
-              0,
-              TASK_LIMITS.titleMaxLength,
-            ),
+            title: t("scan.revisionTitle", { topics: day.topics.length ? day.topics.join("、") : t("scan.revisionAll") }).slice(0, TASK_LIMITS.titleMaxLength),
+            examRef: row.key,
             categoryId: "revision",
             subjectId: row.subjectId,
             date: day.date,

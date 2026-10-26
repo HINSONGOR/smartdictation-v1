@@ -177,3 +177,13 @@ export function CloudIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Paper with a pencil — exams. */
+export function ExamIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M6 3h9l3 3v15H6z" />
+      <path d="M9 9h6M9 13h6M9 17h3" />
+    </Svg>
+  );
+}

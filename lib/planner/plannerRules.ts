@@ -164,6 +164,73 @@ export function todayView(tasks: StudentTask[], today: DateKey): TodayView {
   };
 }
 
+// ---- check-in (打卡) ----------------------------------------------------------
+
+/** all = every task of the day done (checked in); some = part done; none = nothing done; empty = no tasks; future. */
+export type DayStatus = "all" | "some" | "none" | "empty" | "future";
+
+export function dayStatus(tasks: StudentTask[], day: DateKey, today: DateKey): DayStatus {
+  const ofDay = tasks.filter((t) => t.date === day);
+  if (day > today) return "future";
+  if (ofDay.length === 0) return "empty";
+  const done = ofDay.filter((t) => t.done).length;
+  return done === ofDay.length ? "all" : done > 0 ? "some" : "none";
+}
+
+/** The `count` days ending with `day` (oldest first). */
+export function lastDays(day: DateKey, count: number): DateKey[] {
+  return Array.from({ length: count }, (_, i) => addDays(day, i - count + 1));
+}
+
+/** Monday-first week containing `day`. */
+export function weekOf(day: DateKey): DateKey[] {
+  const offset = (parseDateKey(day).getDay() + 6) % 7;
+  return Array.from({ length: 7 }, (_, i) => addDays(day, i - offset));
+}
+
+/**
+ * Check-in streak: consecutive days on which every task was done.
+ * Days without tasks (e.g. weekends) neither count nor break it; today only counts once complete.
+ */
+export function checkInStreak(tasks: StudentTask[], today: DateKey): number {
+  const days = new Set(tasks.map((t) => t.date));
+  const earliest = [...days].sort()[0];
+  if (!earliest) return 0;
+  let streak = 0;
+  let day = dayStatus(tasks, today, today) === "all" ? today : addDays(today, -1);
+  for (; day >= earliest; day = addDays(day, -1)) {
+    const status = dayStatus(tasks, day, today);
+    if (status === "empty") continue;
+    if (status !== "all") break;
+    streak++;
+  }
+  return streak;
+}
+
+// ---- exams ------------------------------------------------------------------
+
+export interface ExamCard {
+  exam: StudentTask;
+  days: number;
+  /** Revision tasks planned for this exam. */
+  revision: StudentTask[];
+  revisionDone: number;
+}
+
+const EXAM_CATEGORIES = new Set(["exam", "dictation"]);
+
+/** Exams and dictations: upcoming (soonest first) and finished (latest first), with their revision progress. */
+export function examsView(tasks: StudentTask[], today: DateKey): { upcoming: ExamCard[]; past: ExamCard[] } {
+  const cards = [...tasks]
+    .filter((t) => EXAM_CATEGORIES.has(t.categoryId))
+    .sort(byDateTime)
+    .map((exam) => {
+      const revision = tasks.filter((t) => t.examId === exam.id).sort(byDateTime);
+      return { exam, days: daysBetween(today, exam.date), revision, revisionDone: revision.filter((t) => t.done).length };
+    });
+  return { upcoming: cards.filter((c) => c.days >= 0), past: cards.filter((c) => c.days < 0).reverse() };
+}
+
 /** Tasks per day, for the calendar. */
 export function tasksByDay(tasks: StudentTask[]): Map<DateKey, StudentTask[]> {
   const days = new Map<DateKey, StudentTask[]>();
