@@ -763,6 +763,7 @@ export const en: Messages = {
   "scan.checkHint": "Check what the AI read: dates and categories can be changed, untick what you don't need. Then tap “Add all”.",
   "scan.include": "Add this",
   "scan.dateMissing": "⚠️ No date found — please choose",
+  "scan.datesNeeded": "{n} item(s) still need a date (in red). Choose one, or untick the item.",
   "scan.scope": "Scope (separate with commas)",
   "scan.scopePlaceholder": "e.g. Unit 3, Unit 4, word list",
   "scan.autoPlan": "Plan revision automatically",

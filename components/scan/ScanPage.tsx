@@ -22,7 +22,10 @@ const PLAN_DAYS = [3, 5, 7];
 const MAX_PHOTOS = 4;
 const REVISION_MINUTES = 20;
 
-type Row = ScannedItem & { plan: boolean; planDays: number };
+/** `scopeText` is the scope box as typed ("第1課、第2課"); `scope` is its parts. */
+type Row = ScannedItem & { plan: boolean; planDays: number; scopeText: string };
+
+const scopeParts = (text: string) => text.split(/[、,，;；\n]/).map((s) => s.trim()).filter(Boolean);
 type Phase = { kind: "pick" } | { kind: "reading" } | { kind: "review" } | { kind: "done"; added: number; revision: number };
 
 /** Subjects can come back from the AI in either language. */
@@ -71,7 +74,7 @@ export function ScanPage({ student }: { student: StudentSummary }) {
       const items = parseScanResult(answer, today, options.subjects, subjectNames);
       if (items === null) throw new Error("unreadable");
       if (items.length === 0) setError(t("scan.nothingFound"));
-      const added = items.map((i) => ({ ...i, plan: i.categoryId === "exam" && i.scope.length > 0, planDays: 5 }));
+      const added = items.map((i) => ({ ...i, plan: i.categoryId === "exam" && i.scope.length > 0, planDays: 5, scopeText: i.scope.join("、") }));
       setRows((prev) => [...prev, ...added]);
       setPhase(had || added.length ? { kind: "review" } : { kind: "pick" });
     } catch (err) {
@@ -130,6 +133,8 @@ export function ScanPage({ student }: { student: StudentSummary }) {
   }
 
   const included = rows.filter((r) => r.include);
+  /** Ticked items whose date the AI couldn't read and nobody has chosen yet. */
+  const undated = included.filter((r) => r.dateMissing).length;
   const fileInput = <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={read} />;
 
   if (phase.kind === "done") {
@@ -205,9 +210,10 @@ export function ScanPage({ student }: { student: StudentSummary }) {
                 </select>
               </div>
             )}
+            {undated > 0 && <p className="text-sm font-medium text-danger">{t("scan.datesNeeded", { n: undated })}</p>}
             <ErrorText>{error}</ErrorText>
             <div className="flex flex-wrap gap-2">
-              <Button disabled={saving || included.length === 0} onClick={addAll}>
+              <Button disabled={saving || included.length === 0 || undated > 0} onClick={addAll}>
                 {t("scan.addAll", { n: included.length })}
               </Button>
               <Button variant="secondary" onClick={pickPhoto}>
@@ -264,7 +270,7 @@ function ScanRow({ row, options, onChange }: { row: Row; options: PlannerOptions
                 id={`${id}-date`}
                 type="date"
                 value={row.date}
-                onChange={(e) => onChange({ date: e.target.value, dateMissing: false })}
+                onChange={(e) => onChange({ date: e.target.value, dateMissing: !e.target.value })}
                 className={row.dateMissing ? "border-danger" : ""}
               />
             </div>
@@ -306,8 +312,8 @@ function ScanRow({ row, options, onChange }: { row: Row; options: PlannerOptions
             </label>
             <TextInput
               id={`${id}-scope`}
-              value={row.scope.join("、")}
-              onChange={(e) => onChange({ scope: e.target.value.split(/[、,，;；]/).map((s) => s.trim()).filter(Boolean) })}
+              value={row.scopeText}
+              onChange={(e) => onChange({ scopeText: e.target.value, scope: scopeParts(e.target.value) })}
               placeholder={t("scan.scopePlaceholder")}
             />
           </div>

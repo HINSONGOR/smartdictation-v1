@@ -5,7 +5,7 @@ import { createLocalRepositories } from "@/lib/data/local/localRepositories";
 import { ServiceError } from "@/lib/errors";
 import type { PracticeSession, StudentTask } from "@/types";
 import { PlannerService } from "./PlannerService";
-import { addDays, autoDoneAt, categoriesOf, checkInStreak, occurrenceDays, occurrenceId, repeatsOn, dayStatus, daysBetween, examsView, isDateKey, lastDays, monthGrid, schoolYearOf, todayView, weekOf } from "./plannerRules";
+import { addDays, autoDoneAt, categoriesOf, dateKey, checkInStreak, occurrenceDays, occurrenceId, repeatsOn, dayStatus, daysBetween, examsView, isDateKey, lastDays, monthGrid, schoolYearOf, todayView, weekOf } from "./plannerRules";
 
 const T = "2026-10-26T00:00:00.000Z";
 const codeOf = (p: Promise<unknown>) => p.then(() => null, (e: unknown) => (e instanceof ServiceError ? e.code : String(e)));
@@ -213,6 +213,16 @@ describe("repeating tasks", () => {
     expect(await planner.listTasks("a", MON)).toHaveLength(10); // no duplicates
     expect(await planner.listTasks("a", "2026-10-28")).toHaveLength(12); // the window moves on
     expect(await codeOf(planner.create("a", { ...base, repeat: { kind: "weekly", weekdays: [] } }))).toBe("task.weekdaysRequired");
+  });
+
+  it("a linked repeating task: one practice only ticks that day", async () => {
+    const day = dateKey(new Date());
+    await planner.create("a", { ...base, date: day, link: { kind: "mistakeReview", language: "zh" }, repeat: { kind: "daily" } });
+    const at = new Date(Date.now() + 1000);
+    if (dateKey(at) !== day) return; // just before midnight: nothing to check
+    await repos.practice.save(session({ kind: "review", language: "zh", finishedAt: at.toISOString() }));
+    const tasks = await planner.listTasks("a", day);
+    expect(tasks.filter((t) => t.done).map((t) => t.date)).toEqual([day]);
   });
 
   it("skips one day, or stops from a day on, when a day's task is deleted", async () => {

@@ -107,6 +107,7 @@ export function categoryFor(task: Pick<StudentTask, "categoryId">, categories: C
 /**
  * A linked task counts as done once the linked practice happened after the task was last changed
  * (so un-ticking it by hand sticks until the next practice).
+ * One day of a repeating task only counts practice done on that day.
  * Reads practice sessions only — the dictation system itself is not changed.
  */
 export function autoDoneAt(task: StudentTask, sessions: PracticeSession[]): string | null {
@@ -114,6 +115,7 @@ export function autoDoneAt(task: StudentTask, sessions: PracticeSession[]): stri
   if (task.done || !link || link.kind === "knowledge") return null; // notes are read, not practised
   const match = sessions
     .filter((s) => s.finishedAt >= task.updatedAt)
+    .filter((s) => !task.routineId || dateKey(new Date(s.finishedAt)) === task.date)
     .filter((s) =>
       link.kind === "dictationList"
         ? s.listId === link.listId && (s.kind ?? "list") !== "review"

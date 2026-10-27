@@ -762,6 +762,7 @@ export const zhHK = {
   "scan.checkHint": "請核對 AI 讀到嘅內容：日期、類別都可以改，唔要嘅剔走。確認後撳「全部加入」。",
   "scan.include": "加入呢項",
   "scan.dateMissing": "⚠️ 讀唔到日期，請揀",
+  "scan.datesNeeded": "有 {n} 項未揀日期（紅色），揀好先可以加入；唔要嘅可以剔走。",
   "scan.scope": "範圍（用「、」分開）",
   "scan.scopePlaceholder": "例如：第3課、第4課、詞語表",
   "scan.autoPlan": "自動排溫習",
