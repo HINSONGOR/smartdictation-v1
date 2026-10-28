@@ -275,6 +275,25 @@ describe("CloudSyncService (two devices)", () => {
     expect(cloud.rows.get(`${id}/future/x`)?.deleted).toBe(false);
   });
 
+  it("after an app update, pulls rows an older version skipped", async () => {
+    const ipad = device(cloud);
+    await ipad.repos.students.save(student("a", "小明"));
+    await ipad.repos.knowledge.save({
+      id: "k1", studentId: "a", kind: "qa", subjectId: "gs", title: "科技成果？", body: "", answer: "高鐵",
+      schoolYear: "2026-27", createdAt: T, updatedAt: T,
+    });
+    await ipad.sync.signUp("Mum-Family", "pw123456");
+
+    // The phone ran a version without the knowledge collection: its cursor already moved past that row.
+    const phone = device(cloud);
+    const userId = [...cloud.accounts.values()][0].id;
+    const newest = [...cloud.rows.values()].map((r) => r.updatedAt).sort().at(-1)!;
+    await phone.repos.syncState.save({ userId, cursor: newest, base: {}, lastSyncedAt: T });
+    await phone.sync.signIn("Mum-Family", "pw123456");
+    expect((await phone.repos.knowledge.listByStudent("a")).map((k) => k.title)).toEqual(["科技成果？"]);
+    expect((await phone.repos.syncState.get())?.collections).toContain("knowledge");
+  });
+
   it("keeps a local save made while a sync is downloading", async () => {
     const ipad = device(cloud);
     await ipad.repos.students.save(student("a", "小明"));

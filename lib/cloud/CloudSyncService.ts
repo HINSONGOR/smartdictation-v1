@@ -9,6 +9,7 @@ import {
   type SyncState,
   type SyncStateRepository,
 } from "@/lib/data";
+import { SYNC_COLLECTIONS } from "@/lib/data/cloud";
 import { nowIso } from "@/lib/utils/id";
 import { DEFAULT_OWNER_PIN, type OwnerProfile } from "@/types";
 import { accountEmail } from "./account";
@@ -191,6 +192,9 @@ export class CloudSyncService {
       // A different account on this device starts fresh (this device's data is merged into it).
       const state: SyncState =
         saved && saved.userId === user.id ? saved : { userId: user.id, cursor: null, base: {}, lastSyncedAt: null };
+      // This app version knows a collection the last sync didn't (e.g. after an update): rows of it
+      // were skipped while the cursor moved past them, so pull everything again (unchanged rows are no-ops).
+      if (SYNC_COLLECTIONS.some((c) => !state.collections?.includes(c))) state.cursor = null;
 
       const version = this.localVersion;
       const [snapshot, owner] = await Promise.all([this.backup.readAll(), this.owner.get()]);
@@ -223,6 +227,7 @@ export class CloudSyncService {
         cursor: latestCursor(latestCursor(state.cursor, remote), pushed),
         base: finishSync(plan.base, plan.toPush),
         lastSyncedAt: now,
+        collections: [...SYNC_COLLECTIONS],
       };
       await this.syncState.save(nextState);
       this.patchSignedIn({ syncing: false, lastSyncedAt: now, error: null });

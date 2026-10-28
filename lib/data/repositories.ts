@@ -114,6 +114,11 @@ export interface SyncState {
   /** "collection/id" → fingerprint of each record as last synced. */
   base: Record<string, string>;
   lastSyncedAt: string | null;
+  /**
+   * Collections the app knew at the last sync. Rows of collections it didn't know were skipped
+   * while the cursor moved past them, so a newer app version pulls everything once again.
+   */
+  collections?: string[];
 }
 
 export interface SyncStateRepository {
