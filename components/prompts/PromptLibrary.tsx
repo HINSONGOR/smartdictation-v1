@@ -14,7 +14,7 @@ import { PromptService } from "@/lib/prompts/PromptService";
 import { SAMPLE_PROMPTS } from "@/lib/prompts/samples";
 import type { StudentSummary } from "@/lib/student/StudentService";
 import { PROMPT_PURPOSES, type PromptEntry, type PromptPurpose } from "@/types";
-import { AI_LINKS, aiLabel, copyText, promptRoutes, purposeLabel } from "./promptUi";
+import { AI_LINKS, aiLabel, copyText, knownAi, promptRoutes, purposeLabel } from "./promptUi";
 
 type Owner = "all" | "family" | "mine";
 
@@ -186,7 +186,8 @@ function UsePrompt({ prompt, onClose }: { prompt: PromptEntry; onClose: () => vo
     setCopied(await copyText(text));
   }
 
-  const links = prompt.ai === "any" ? (Object.keys(AI_LINKS) as (keyof typeof AI_LINKS)[]) : [prompt.ai];
+  const ai = knownAi(prompt.ai);
+  const links = ai === "any" ? (Object.keys(AI_LINKS) as (keyof typeof AI_LINKS)[]) : [ai];
 
   return (
     <div className="space-y-3 rounded-control bg-surface-muted p-3">

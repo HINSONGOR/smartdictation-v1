@@ -586,7 +586,6 @@ export const en: Messages = {
   "prompts.ai.any": "Any AI",
   "prompts.ai.gemini": "Gemini",
   "prompts.ai.chatgpt": "ChatGPT",
-  "prompts.ai.claude": "Claude",
   "error.prompt.titleRequired": "Please enter a name.",
   "error.prompt.titleTooLong": "The name is too long.",
   "error.prompt.contentRequired": "Please enter the prompt.",

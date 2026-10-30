@@ -1,11 +1,12 @@
 import type { Entity, ISODateString } from "./common";
 
-/** AI 指令收納庫: saved prompts for Gemini / ChatGPT / Claude, shared by the family or a student's own. */
+/** AI 指令收納庫: saved prompts for Gemini / ChatGPT, shared by the family or a student's own. */
 
 export const PROMPT_PURPOSES = ["study", "writing", "explain", "quiz", "translate", "other"] as const;
 export type PromptPurpose = (typeof PROMPT_PURPOSES)[number];
 
-export const PROMPT_AIS = ["any", "gemini", "chatgpt", "claude"] as const;
+/** Older prompts may still say "claude" (no longer offered): they show as "any". */
+export const PROMPT_AIS = ["any", "gemini", "chatgpt"] as const;
 export type PromptAi = (typeof PROMPT_AIS)[number];
 
 /** An earlier version of a prompt (kept when it is edited). */

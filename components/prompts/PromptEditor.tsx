@@ -13,7 +13,7 @@ import type { SubjectView } from "@/lib/planner/plannerRules";
 import { blanksOf } from "@/lib/prompts/promptText";
 import { PromptService } from "@/lib/prompts/PromptService";
 import { PROMPT_AIS, PROMPT_LIMITS, PROMPT_PURPOSES, type PromptAi, type PromptEntry, type PromptPurpose } from "@/types";
-import { aiLabel, promptRoutes, purposeLabel } from "./promptUi";
+import { aiLabel, knownAi, promptRoutes, purposeLabel } from "./promptUi";
 
 const TEXTAREA =
   "w-full rounded-control border border-border bg-surface p-3 text-base leading-7 text-foreground placeholder:text-muted focus:outline-2 focus:outline-primary";
@@ -55,7 +55,7 @@ function Form({
   const [content, setContent] = useState(prompt?.content ?? "");
   const [subjectId, setSubjectId] = useState(prompt?.subjectId ?? "");
   const [purpose, setPurpose] = useState<PromptPurpose>(prompt?.purpose ?? "study");
-  const [ai, setAi] = useState<PromptAi>(prompt?.ai ?? "any");
+  const [ai, setAi] = useState<PromptAi>(knownAi(prompt?.ai ?? "any"));
   const [shared, setShared] = useState(prompt ? prompt.ownerStudentId === null : true);
   const [changeNote, setChangeNote] = useState("");
   const [error, setError] = useState<string | null>(null);

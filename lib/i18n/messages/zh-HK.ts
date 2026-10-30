@@ -585,7 +585,6 @@ export const zhHK = {
   "prompts.ai.any": "通用",
   "prompts.ai.gemini": "Gemini",
   "prompts.ai.chatgpt": "ChatGPT",
-  "prompts.ai.claude": "Claude",
   "error.prompt.titleRequired": "請輸入名稱。",
   "error.prompt.titleTooLong": "名稱太長。",
   "error.prompt.contentRequired": "請輸入指令內容。",
