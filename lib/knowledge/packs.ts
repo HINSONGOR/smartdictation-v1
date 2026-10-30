@@ -1,4 +1,5 @@
 import type { KnowledgeInput } from "@/types";
+import { FILL_IN_LIST_TITLE, FILL_IN_WORDS } from "./packsChinese";
 import { DISPLACEMENT_PACK } from "./packsDisplacement";
 import { ENGLISH_TENSE_CARDS, ENGLISH_TENSE_NOTES } from "./packsEnglish";
 
@@ -13,9 +14,12 @@ export interface KnowledgePack {
     | "knowledge.pack.shapes"
     | "knowledge.pack.shapeCards"
     | "knowledge.pack.displacement"
+    | "knowledge.pack.fillIn"
     | "knowledge.pack.tenses"
     | "knowledge.pack.tenseCards";
   items: KnowledgeInput[];
+  /** Also make a dictation list of the pack's words (vocab items), titled so. */
+  dictationTitle?: string;
 }
 
 const T2 = "圖形公式（2D）";
@@ -132,6 +136,7 @@ export const KNOWLEDGE_PACKS: KnowledgePack[] = [
   { id: "shapes", titleKey: "knowledge.pack.shapes", items: SHAPES },
   { id: "shapeCards", titleKey: "knowledge.pack.shapeCards", items: SHAPE_CARDS },
   { id: "displacement", titleKey: "knowledge.pack.displacement", items: DISPLACEMENT_PACK },
+  { id: "fillIn", titleKey: "knowledge.pack.fillIn", items: FILL_IN_WORDS, dictationTitle: FILL_IN_LIST_TITLE },
   { id: "tenses", titleKey: "knowledge.pack.tenses", items: ENGLISH_TENSE_NOTES },
   { id: "tenseCards", titleKey: "knowledge.pack.tenseCards", items: ENGLISH_TENSE_CARDS },
 ];

@@ -9,6 +9,7 @@ import { subjectsOf } from "@/lib/planner/plannerRules";
 import { parseQaResult } from "@/lib/scan/qaScan";
 import { KnowledgeService, vocabItemsText, vocabLanguage } from "./KnowledgeService";
 import { KNOWLEDGE_PACKS } from "./packs";
+import { FILL_IN_WORDS } from "./packsChinese";
 import { DISPLACEMENT_PACK } from "./packsDisplacement";
 
 const codeOf = (p: Promise<unknown>) => p.then(() => null, (e: unknown) => (e instanceof ServiceError ? e.code : String(e)));
@@ -115,7 +116,23 @@ describe("knowledge packs", () => {
     const english = items.filter((i) => i.subjectId === "english");
     expect(english.filter((i) => i.kind === "note")).toHaveLength(12); // 11 tenses + traps
     expect(english.filter((i) => i.kind === "qa")).toHaveLength(18);
-    expect(math.length + english.length).toBe(items.length);
+    const chinese = items.filter((i) => i.subjectId === "chinese");
+    expect(chinese.filter((i) => i.kind === "vocab").map((i) => i.title)).toHaveLength(7);
+    expect(chinese.filter((i) => i.kind === "qa")).toHaveLength(7);
+    expect(math.length + english.length + chinese.length).toBe(items.length);
+  });
+
+  it("fill-in words make a dictation list whose hints never give the word away", () => {
+    const words = FILL_IN_WORDS.filter((i) => i.kind === "vocab");
+    expect(words.map((w) => w.title)).toEqual(["飛濺", "橫生", "烽火", "依舊", "時勢", "驚惶", "渾身解數"]);
+    expect(vocabLanguage(words)).toBe("zh");
+    const lines = vocabItemsText(words).split("\n");
+    expect(lines).toHaveLength(7);
+    for (const line of lines) {
+      const [word, hint] = line.split(" | ");
+      expect(hint).toBeTruthy();
+      expect(hint).not.toContain(word);
+    }
   });
 
   it("worked examples add up (π = 3.14)", () => {

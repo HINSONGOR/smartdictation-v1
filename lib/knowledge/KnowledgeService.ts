@@ -126,14 +126,14 @@ export class KnowledgeService {
 }
 
 /** Dictation language for vocabulary: from the subject, else from the words themselves. */
-export function vocabLanguage(items: KnowledgeItem[]): DictationLanguage {
+export function vocabLanguage(items: Pick<KnowledgeItem, "subjectId" | "title">[]): DictationLanguage {
   if (items.some((i) => i.subjectId === "english")) return "en";
   if (items.some((i) => i.subjectId === "chinese")) return "zh";
   return items.some((i) => /\p{Script=Han}/u.test(i.title)) ? "zh" : "en";
 }
 
 /** Word list text for a new dictation list: one "word | meaning" per line. */
-export function vocabItemsText(items: KnowledgeItem[]): string {
+export function vocabItemsText(items: Pick<KnowledgeItem, "kind" | "title" | "body">[]): string {
   return items
     .filter((i) => i.kind === "vocab")
     .map((i) => {

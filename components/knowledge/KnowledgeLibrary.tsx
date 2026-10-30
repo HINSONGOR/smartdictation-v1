@@ -12,10 +12,10 @@ import { Card } from "@/components/ui/Card";
 import { ErrorText, TextInput } from "@/components/ui/TextInput";
 import { errorMessage, type MessageKey } from "@/lib/i18n";
 import { vocabItemsText, vocabLanguage } from "@/lib/knowledge/KnowledgeService";
-import { KNOWLEDGE_PACKS } from "@/lib/knowledge/packs";
+import { KNOWLEDGE_PACKS, type KnowledgePack } from "@/lib/knowledge/packs";
 import type { SubjectView } from "@/lib/planner/plannerRules";
 import type { StudentSummary } from "@/lib/student/StudentService";
-import { KNOWLEDGE_KINDS, type KnowledgeItem, type KnowledgeKind } from "@/types";
+import { KNOWLEDGE_KINDS, type DictationList, type KnowledgeItem, type KnowledgeKind } from "@/types";
 import { KIND_ICON, REVIEWABLE, knowledgeRoutes } from "./knowledgeUi";
 import { QaScanPanel } from "./QaScanPanel";
 import { ReviewDeck } from "./ReviewDeck";
@@ -36,13 +36,58 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
   const [picked, setPicked] = useState<string[]>([]);
   const [listTitle, setListTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
+  /** Dictation word lists, so a word card can open the list it is in. */
+  const [lists, setLists] = useState<DictationList[]>([]);
+  /** A dictation list just made from a pack. */
+  const [madeList, setMadeList] = useState<DictationList | null>(null);
 
   const reload = () => services.knowledge.list(student.id).then(setItems);
+  const loadLists = () =>
+    Promise.all([services.dictation.listForStudent(student.id, "zh"), services.dictation.listForStudent(student.id, "en")]).then(
+      ([zh, en]) => setLists([...zh, ...en]),
+    );
 
   useEffect(() => {
     services.knowledge.list(student.id).then(setItems);
     services.planner.options().then((o) => setSubjects(o.subjects));
+    Promise.all([services.dictation.listForStudent(student.id, "zh"), services.dictation.listForStudent(student.id, "en")]).then(
+      ([zh, en]) => setLists([...zh, ...en]),
+    );
   }, [services, student.id, dataVersion]);
+
+  /** The newest dictation list containing each word. */
+  const listOfWord = useMemo(() => {
+    const map = new Map<string, DictationList>();
+    for (const list of lists) for (const item of list.items) if (!map.has(item.text)) map.set(item.text, list);
+    return map;
+  }, [lists]);
+
+  async function addPack(pack: KnowledgePack) {
+    setError(null);
+    setMadeList(null);
+    try {
+      const added = await services.knowledge.addPack(student.id, pack.items);
+      setNotice(t("knowledge.packAdded", { n: added }));
+      if (pack.dictationTitle) {
+        const words = pack.items.filter((i) => i.kind === "vocab");
+        const language = vocabLanguage(words);
+        const existing = lists.find((l) => l.language === language && l.title === pack.dictationTitle);
+        setMadeList(
+          existing ??
+            (await services.dictation.create(student.id, language, {
+              type: "words",
+              title: pack.dictationTitle,
+              itemsText: vocabItemsText(words),
+              paragraphs: [],
+            })),
+        );
+        await loadLists();
+      }
+      await reload();
+    } catch (err) {
+      setError(errorMessage(t, err));
+    }
+  }
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -122,6 +167,15 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
       {notice && (
         <p role="status" className="rounded-control bg-surface-muted p-2 text-sm text-success">
           {notice}
+          {madeList && (
+            <>
+              {" "}
+              {t("knowledge.packListMade", { title: madeList.title })}{" "}
+              <Link href={dictationRoutes.practice(madeList.language, madeList.id)} className="font-semibold text-primary underline">
+                {t("knowledge.goDictation", { title: madeList.title })}
+              </Link>
+            </>
+          )}
         </p>
       )}
 
@@ -226,6 +280,7 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
               focused={item.id === focusId}
               picking={picking && item.kind === "vocab"}
               picked={picked.includes(item.id)}
+              list={item.kind === "vocab" ? listOfWord.get(item.title) : undefined}
               onPick={(on) => setPicked((p) => (on ? [...p, item.id] : p.filter((x) => x !== item.id)))}
               onPin={async () => {
                 await services.knowledge.setPinned(student.id, item.id, !item.pinned);
@@ -253,15 +308,7 @@ export function KnowledgeLibrary({ student, focusId }: { student: StudentSummary
                     {t(pack.titleKey)}
                     <span className="block text-xs text-muted">{t(`${pack.titleKey}.desc` as MessageKey, { n: pack.items.length })}</span>
                   </span>
-                  <Button
-                    variant="secondary"
-                    disabled={missing === 0}
-                    onClick={async () => {
-                      const added = await services.knowledge.addPack(student.id, pack.items);
-                      setNotice(t("knowledge.packAdded", { n: added }));
-                      await reload();
-                    }}
-                  >
+                  <Button variant="secondary" disabled={missing === 0} onClick={() => addPack(pack)}>
                     {missing === 0 ? t("knowledge.packHave") : t("knowledge.packAdd")}
                   </Button>
                 </li>
@@ -280,6 +327,7 @@ function ItemCard({
   focused,
   picking,
   picked,
+  list,
   onPick,
   onPin,
   onDelete,
@@ -289,6 +337,8 @@ function ItemCard({
   focused: boolean;
   picking: boolean;
   picked: boolean;
+  /** Dictation list this word is in. */
+  list?: DictationList;
   onPick: (on: boolean) => void;
   onPin: () => void;
   onDelete: () => void;
@@ -383,6 +433,14 @@ function ItemCard({
                     <li key={i}>{e}</li>
                   ))}
                 </ul>
+              )}
+              {list && (
+                <Link
+                  href={dictationRoutes.practice(list.language, list.id)}
+                  className="inline-flex min-h-11 items-center rounded-control border border-border bg-surface px-3 text-sm font-medium text-primary hover:bg-primary-soft"
+                >
+                  {t("knowledge.goDictation", { title: list.title })}
+                </Link>
               )}
               {hasAnswer &&
                 (showAnswer ? (
